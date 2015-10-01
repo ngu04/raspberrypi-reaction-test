@@ -122,7 +122,7 @@ class ReactionController(gpioController: GpioController, reactionLedPulseLength:
     promise.future
   }
 
-  def stopButtonTrigger: GpioPinListenerDigital = new GpioPinListenerDigital {
+  private def stopButtonTrigger: GpioPinListenerDigital = new GpioPinListenerDigital {
     override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
       stopButton.removeAllListeners()
       counter.set(Int.MinValue)
