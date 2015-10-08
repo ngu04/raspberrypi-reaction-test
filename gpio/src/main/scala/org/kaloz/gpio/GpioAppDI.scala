@@ -1,12 +1,11 @@
 package org.kaloz.gpio
 
-import com.pi4j.io.gpio.GpioFactory
-
+import org.kaloz.gpio.common.PinController
 
 trait GpioAppDI extends GpioAppConfig {
 
-  val gpioController = GpioFactory.getInstance()
+  val pinController = new PinController()
 
-  val reactionController = new ReactionController(gpioController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold)
-  val sessionHandler = new SessionHandler(gpioController, reactionController)
+  val reactionController = new ReactionController(pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold)
+  val sessionHandler = new SessionHandler(pinController, reactionController)
 }

@@ -47,5 +47,15 @@ object Dependencies {
     scalaTest     	% "test"
   )
 
+  val common = deps(
+    jodaTime,
+    scalazCore,
+    pi4jDevice,
+    scalaLogging,
+    logBack,
+    mockito       	% "test",
+    scalaTest     	% "test"
+  )
+
   private def deps(modules: ModuleID*): Seq[Setting[_]] = Seq(libraryDependencies ++= modules)
 }

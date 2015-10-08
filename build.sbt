@@ -1,8 +1,13 @@
 lazy val root = Project("root", file("."))
-  .aggregate(gpio)
+  .aggregate(gpio, common)
   .settings(BaseSettings.settings: _*)
 
+lazy val common = Project("common", file("common"))
+  .settings(BaseSettings.settings: _*)
+  .settings(Dependencies.common: _*)
+
 lazy val gpio = Project("gpio", file("gpio"))
+  .dependsOn(common)
   .settings(BaseSettings.settings: _*)
   .settings(Dependencies.gpio: _*)
   .settings(Assembly.gpioAssemblySettings: _*)
