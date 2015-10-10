@@ -30,6 +30,13 @@ In order to be able to try different approaches there are multiple modules in th
 - **stream** - it ***will*** contain the akka stream solution
  
 ### Circuit layout
+Items:
+- 3 x 330Ohm resistances
+- 1 x red led
+- 1 x RGB led
+- 4 x buttons
+- Breadboard + wires
+
 GPIO usage
 - Start button -> BCM_25 (input, PinPullResistance.PULL_UP)
 - Stop button -> BCM_24 (input, PinPullResistance.PULL_UP)
