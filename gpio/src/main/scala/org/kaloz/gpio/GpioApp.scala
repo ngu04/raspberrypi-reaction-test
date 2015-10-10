@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.pi4j.io.gpio._
 import com.typesafe.scalalogging.StrictLogging
 import org.joda.time.DateTime
-import org.kaloz.gpio.ReactionController.CurrentReactionTestResult
+import org.kaloz.gpio.ReactionFlowController.CurrentReactionTestResult
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
@@ -22,7 +22,7 @@ object GpioApp extends App with GpioAppDI with StrictLogging {
 
 }
 
-class SessionHandler(pinController: PinController, reactionController: ReactionController) extends StrictLogging {
+class SessionHandler(pinController: PinController, reactionController: ReactionFlowController) extends StrictLogging {
 
   private val countDownLatch = new CountDownLatch(1)
 
@@ -49,78 +49,80 @@ class SessionHandler(pinController: PinController, reactionController: ReactionC
   }
 }
 
-class ReactionController(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) extends StrictLogging {
+class ReactionFlowController(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, testEndThreshold: Int) extends StrictLogging {
 
-  val WAIT_OFFSET_IN_MILLIS = 3000
-  val WAIT_OFFSET_RANDOM_IN_MILLIS = 3000
+  private val WAIT_OFFSET_IN_MILLIS = 3000
+  private val WAIT_OFFSET_RANDOM_IN_MILLIS = 3000
 
   private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed")).map(pinController.digitalOutputPin(_))
   private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton")).map(pinController.digitalInputPin(_))
-  reactionButtons.foreach(_.setDebounce(1000))
-
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
-
   private val counter = new AtomicInteger(1)
 
   def reactionTestStream() = {
+    reactionButtons.foreach(_.setDebounce(1000))
     val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
     stopButton.addStateChangeEventListener { event =>
       stopButton.removeAllListeners()
-      counter.set(Int.MinValue)
+      progressIndicatorLed.setPwm(Int.MaxValue)
       logger.info(s"$counter. Reaction test session is interrupted!")
     }
 
     Stream.continually {
-      val (reactionTime, reactionProgressCounter) = runReactionTest
-      CurrentReactionTestResult(reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
+      runReactionTestIteration
     }
   }
 
-  private def notStopped() = counter.get() >= 0
+  private def runReactionTestIteration() = {
 
-  private def verifyAggregatedResultBelowReactionThreshold(actualReactionProgress: Int) = actualReactionProgress < reactionThreshold
-
-  private def runReactionTest() = {
-    Thread.sleep(WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS))
-
-    val reactionTestType = Random.nextInt(reactionLeds.size)
-    val startTime = DateTime.now.getMillis
-
-    logger.info(s"$counter. Reaction type is ${reactionLeds(reactionTestType).getName}!")
-
-    Await.result(Future.firstCompletedOf(Seq(
-      pulseTestLed(reactionTestType),
-      buttonReaction(reactionTestType)
-    )), reactionLedPulseLength * 2 millis)
-
-    val reaction = (DateTime.now.getMillis - startTime).toInt
-    logger.info(s"$counter. Reaction time is $reaction ms")
-
-    progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + reaction / reactionCorrectionFactor)
-    (reaction, progressIndicatorLed.getPwm)
-  }
-
-  private def pulseTestLed(reactionTestType: Int): Future[Unit] = Future {
-    reactionLeds(reactionTestType).pulse(reactionLedPulseLength, true)
-    reactionButtons(reactionTestType).removeAllListeners()
-    logger.info(s"$counter. led switch off for ${reactionLeds(reactionTestType)}")
-  }
-
-  private def buttonReaction(reactionTestType: Int): Future[Unit] = {
-    val promise = Promise[Unit]
-
-    logger.info(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
-    reactionButtons(reactionTestType).addStateChangeEventListener { event =>
-      logger.info(s"$counter. button pushed")
-      reactionLeds(reactionTestType).setState(PinState.LOW)
-      promise.success((): Unit)
+    def pulseTestLedAndWait(reactionTestType: Int): Future[Unit] = Future {
+      reactionLeds(reactionTestType).pulse(reactionLedPulseLength, true)
+      reactionButtons(reactionTestType).removeAllListeners()
+      logger.debug(s"$counter. led switch off for ${reactionLeds(reactionTestType)}")
     }
 
-    promise.future
+    def waitForUserReaction(reactionTestType: Int): Future[Unit] = {
+      val promise = Promise[Unit]
+
+      logger.debug(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
+      reactionButtons(reactionTestType).addStateChangeEventListener { event =>
+        logger.debug(s"$counter. button pushed")
+        reactionLeds(reactionTestType).setState(PinState.LOW)
+        promise.success((): Unit)
+      }
+
+      promise.future
+    }
+
+    def verifyProgressIndicatorValueBelowTestEndThreshold(progressIndicatorValue: Int) = progressIndicatorValue < testEndThreshold
+
+    def reactionTest() = {
+      Thread.sleep(WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS))
+
+      val reactionTestType = Random.nextInt(reactionLeds.size)
+      val startTime = DateTime.now.getMillis
+
+      logger.debug(s"$counter. Reaction type is ${reactionLeds(reactionTestType).getName}!")
+
+      Await.result(Future.firstCompletedOf(Seq(
+        pulseTestLedAndWait(reactionTestType),
+        waitForUserReaction(reactionTestType)
+      )), reactionLedPulseLength * 2 millis)
+
+      val reactionTime = (DateTime.now.getMillis - startTime).toInt
+      logger.debug(s"$counter. Reaction time is $reactionTime ms")
+
+      progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + reactionTime / reactionCorrectionFactor)
+
+      CurrentReactionTestResult(reactionTime, verifyProgressIndicatorValueBelowTestEndThreshold(progressIndicatorLed.getPwm))
+    }
+
+    reactionTest()
   }
+
 }
 
-object ReactionController {
+object ReactionFlowController {
 
   case class CurrentReactionTestResult(reactionTime: Int, inProgress: Boolean)
 

@@ -75,16 +75,15 @@ I extended the plain vanilla java dsl with some scala features. Now I can use a 
 val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
 stopButton.addStateChangeEventListener { event =>
   stopButton.removeAllListeners()
-  counter.set(Int.MinValue)
-  logger.info(s"$counter Reaction test session is interrupted!")
+  progressIndicatorLed.setPwm(Int.MaxValue)
+  logger.debug(s"$counter Reaction test session is interrupted!")
 }
 ```
 The test itself is a stream of individual reaction tests which is produced by a ***Stream*** 
 ```scala
-Stream.continually {
-  val (reactionTime, reactionProgressCounter) = runReactionTest
-  CurrentReactionTestResult(reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
-}
+  Stream.continually {
+    runReactionTestIteration
+  }
 ```
 The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method.
 ```scala
@@ -102,12 +101,12 @@ Await.result(Future.firstCompletedOf(Seq(
 ```
 Since the push event is handled by a listener I used a ***promise*** to complete the future 
 ```scala
-  private def buttonReaction(reactionTestType: Int): Future[Unit] = {
+  def waitForUserReaction(reactionTestType: Int): Future[Unit] = {
     val promise = Promise[Unit]
 
-    logger.info(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
+    logger.debug(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
     reactionButtons(reactionTestType).addStateChangeEventListener { event =>
-      logger.info(s"$counter. button pushed")
+      logger.debug(s"$counter. button pushed")
       reactionLeds(reactionTestType).setState(PinState.LOW)
       promise.success((): Unit)
     }
@@ -122,4 +121,4 @@ Since the push event is handled by a listener I used a ***promise*** to complete
  sudo java -jar gpio.jar
  ```
  
-This is my basic scala solution for the problem without over complicating it.
+This is my scala reaction tester application solution on Raspberry.

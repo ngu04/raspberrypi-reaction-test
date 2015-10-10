@@ -41,6 +41,7 @@ class PinController extends StrictLogging {
 
   def shutdown(): Unit = {
     logger.info("Shutdown all provisioned pins...")
+    gpioController.getProvisionedPins.filter(_.getMode == PinMode.PWM_OUTPUT).foreach(_.asInstanceOf[GpioPinPwmOutput].setPwm(0))
     gpioController.unprovisionPin(gpioController.getProvisionedPins.toSeq: _*)
     gpioController.shutdown()
   }
