@@ -85,7 +85,7 @@ The test itself is a stream of individual reaction tests which is produced by a 
     runReactionTestIteration
   }
 ```
-The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method.
+The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method. The result is aggregated in the **foldLeft** method. Booom..
 ```scala
 val result = reactionFlowController.reactionTestStream.takeWhile(_.inProgress).foldLeft(Result())((result, currentTestResult) => result.addReactionTime(currentTestResult.reactionTime))
 ```
