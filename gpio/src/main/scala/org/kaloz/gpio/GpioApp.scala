@@ -24,12 +24,12 @@ object GpioApp extends App with GpioAppDI with StrictLogging {
 
 class SessionHandler(pinController: PinController, reactionController: ReactionController) extends StrictLogging {
 
-  private val startButton = pinController.digitalInputPin(BCM_25("Start"))
   private val countDownLatch = new CountDownLatch(1)
 
   def runSession = {
     logger.info("Reaction test is waiting to be started!")
 
+    val startButton = pinController.digitalInputPin(BCM_25("Start"))
     startButton.addStateChangeEventListener { event =>
       logger.info("Reaction test session started!")
       startButton.removeAllListeners()
@@ -54,20 +54,20 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
   reactionButtons.foreach(_.setDebounce(1000))
 
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
-  private val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
 
   private val counter = new AtomicInteger(1)
 
   def reactionTestStream() = {
+    val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
     stopButton.addStateChangeEventListener { event =>
       stopButton.removeAllListeners()
       counter.set(Int.MinValue)
-      logger.info(s"$counter Reaction test session is interrupted!")
+      logger.info(s"$counter. Reaction test session is interrupted!")
     }
 
     Stream.continually {
-      val (reaction, actualReactionProgress) = runReactionTest
-      ReactionTestState(counter.getAndIncrement(), reaction, verifyAggregatedResultBelowReactionThreshold(actualReactionProgress) && notStopped)
+      val (reactionTime, reactionProgressCounter) = runReactionTest
+      ReactionTestState(counter.getAndIncrement(), reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
     }
   }
 
@@ -81,7 +81,7 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
     val reactionTestType = Random.nextInt(reactionLeds.size)
     val startTime = DateTime.now.getMillis
 
-    logger.info(s"$counter Reaction type is ${reactionLeds(reactionTestType).getName}!")
+    logger.info(s"$counter. Reaction type is ${reactionLeds(reactionTestType).getName}!")
 
     Await.result(Future.firstCompletedOf(Seq(
       pulseTestLed(reactionTestType),
@@ -89,7 +89,7 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
     )), reactionLedPulseLength * 2 millis)
 
     val reaction = (DateTime.now.getMillis - startTime).toInt
-    logger.info(s"$counter Reaction time is $reaction ms")
+    logger.info(s"$counter. Reaction time is $reaction ms")
 
     progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + reaction / reactionCorrectionFactor)
     (reaction, progressIndicatorLed.getPwm)
@@ -98,15 +98,15 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
   private def pulseTestLed(reactionTestType: Int): Future[Unit] = Future {
     reactionLeds(reactionTestType).pulse(reactionLedPulseLength, true)
     reactionButtons(reactionTestType).removeAllListeners()
-    logger.info(s"$counter led switch off for ${reactionLeds(reactionTestType)}")
+    logger.info(s"$counter. led switch off for ${reactionLeds(reactionTestType)}")
   }
 
   private def buttonReaction(reactionTestType: Int): Future[Unit] = {
     val promise = Promise[Unit]
 
-    logger.info(s"$counter start listener for ${reactionLeds(reactionTestType)}")
+    logger.info(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
     reactionButtons(reactionTestType).addStateChangeEventListener { event =>
-      logger.info(s"$counter button pushed")
+      logger.info(s"$counter. button pushed")
       reactionLeds(reactionTestType).setState(PinState.LOW)
       promise.success((): Unit)
     }

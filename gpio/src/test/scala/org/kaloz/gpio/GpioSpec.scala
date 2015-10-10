@@ -4,8 +4,8 @@ import org.scalatest.FunSpec
 
 class GpioSpec extends FunSpec {
 
-   describe("Gpio"){
-     it("fake test"){
-     }
-   }
- }
+  describe("Gpio") {
+    it("fake test") {
+    }
+  }
+}

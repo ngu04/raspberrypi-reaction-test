@@ -87,15 +87,13 @@ object BcmPins {
 
 object BcmPinConversions {
 
-  implicit class GPIOPinConversion(gpioPin: GpioPinInput) {
-
-    def addStateChangeEventListener(handler: GpioPinDigitalStateChangeEvent => Unit): Unit =
-      gpioPin.addListener(new GpioPinListenerDigital {
+  implicit class GPIOPinConversion(gpioPinInput: GpioPinInput) {
+    def addStateChangeEventListener(eventHandler: GpioPinDigitalStateChangeEvent => Unit): Unit =
+      gpioPinInput.addListener(new GpioPinListenerDigital {
         override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
-          handler(event)
+          eventHandler(event)
         }
       })
-
   }
 
 }
