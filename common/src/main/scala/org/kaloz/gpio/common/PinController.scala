@@ -7,7 +7,6 @@ import org.kaloz.gpio.common.BcmPins._
 import scala.collection.JavaConversions._
 import scala.languageFeature.postfixOps
 import scalaz.Scalaz._
-import scalaz._
 
 class PinController extends StrictLogging {
 

@@ -16,6 +16,7 @@ That is it!
 ### Tool set
 - [RaspberryPi](https://www.raspberrypi.org/products/raspberry-pi-2-model-b/) is the meat of the application
 - [Fritzing](http://fritzing.org/home/) for circuit design
+- [wiringPi](http://wiringpi.com/) for low level GPIO manipulation
 - [pi4j](http://pi4j.com/) java library to interact with the pi
 - [RxScala](https://github.com/ReactiveX/RxScala) to try reactive streams
 - [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor support
@@ -110,4 +111,10 @@ Since the push event is handled by a listener I used a ***promise*** to complete
   }
 ```
 
+## How to run
+**pi4j** requires **wiringPi** to be deployed on Raspberry Pi. After it is there you can run the test with the following command:
+ ```
+ sudo java -jar gpio.jar
+ ```
+ 
 This is my basic scala solution for the problem without over complicating it.
