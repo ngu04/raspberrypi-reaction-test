@@ -1,4 +1,4 @@
-## Raspberry PI reaction test
+## Raspberry Pi reaction test
 I was always amazed when I see nicely crafted software components. I admire developers who takes his time and tries to deliver something functional meanwhile it is also fun to read. 
 I don't claim that I always fulfil my own criteria but at least I am striving.
 What I like even more is when a software component has its hardware counterpart and they are working together to materialize the functionality in some physical effects. Based on this motive eventually I persuaded myself to buy a Raspberry Pi Model 2 with some extensions to be able build my own sandbox.
@@ -15,6 +15,7 @@ That is it!
   
 ### Tool set
 - [RaspberryPi](https://www.raspberrypi.org/products/raspberry-pi-2-model-b/) is the meat of the application
+- [Fritzing](http://fritzing.org/home/) for circuit design
 - [pi4j](http://pi4j.com/) java library to interact with the pi
 - [RxScala](https://github.com/ReactiveX/RxScala) to try reactive streams
 - [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor support
@@ -86,7 +87,7 @@ Await.result(Future.firstCompletedOf(Seq(
   buttonReaction(reactionTestType)
 )), reactionLedPulseLength * 2 millis)
 ```
-Since the push event is handled by a listener I used a promise to complete the future 
+Since the push event is handled by a listener I used a ***promise*** to complete the future 
 ```scala
   private def buttonReaction(reactionTestType: Int): Future[Unit] = {
     val promise = Promise[Unit]
