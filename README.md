@@ -1,5 +1,5 @@
 ## Raspberry Pi reaction test
-I was always amazed when I see nicely crafted software components. I admire developers who takes his time and tries to deliver something functional meanwhile it is also fun to read. 
+I am always amazed when I see nicely crafted software components. I admire developers who takes the time and tries to deliver something functional meanwhile it is also fun to read. 
 I don't claim that I always fulfil my own criteria but at least I am striving.
 What I like even more is when a software component has its hardware counterpart and they are working together to materialize the functionality in some physical effects. Based on this motive eventually I persuaded myself to buy a Raspberry Pi Model 2 with some extensions to be able build my own sandbox.
 The main goal of this project is to play around with Raspberry's GPIO capability and see how it goes with different scala frameworks.
