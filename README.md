@@ -9,8 +9,8 @@ The test application itself is effectively a simple reaction measure system.
 - Start the test with the start button
 - After it was kicked off it will randomly blink red or green led. You have to push red or green buttons respectively within the configured time range. 
 - The progress indicator PWM red led starts from OFF state. Based on your reaction its pulse width will be increased till the point where it reaches its maximum. 
-- When the red led reaches its maximum pulse width the test is over. Calculated average reaction will be printed.
-- Better reaction time results longer test period
+- When the red led reaches its maximum pulse width (brightest) the test is over. Calculated average reaction and number of tries will be printed.
+- Better reaction time results longer test period -> more tries -> higher score
 
 That is it!
   
