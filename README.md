@@ -11,6 +11,7 @@ The test application itself is effectively a simple reaction measure system.
 - The progress indicator PWM red led starts from OFF state. Based on your reaction its pulse width will be increased till the point where it reaches its maximum. 
 - When the red led reaches its maximum pulse width the test is over. Calculated average reaction will be printed.
 - Better reaction time results longer test period
+
 That is it!
   
 ### Tool set
