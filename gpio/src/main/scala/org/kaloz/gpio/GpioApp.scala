@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.pi4j.io.gpio._
 import com.typesafe.scalalogging.StrictLogging
 import org.joda.time.DateTime
-import org.kaloz.gpio.ReactionController.ReactionTestState
+import org.kaloz.gpio.ReactionController.CurrentReactionTestResult
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
@@ -33,8 +33,8 @@ class SessionHandler(pinController: PinController, reactionController: ReactionC
     startButton.addStateChangeEventListener { event =>
       logger.info("Reaction test session started!")
       startButton.removeAllListeners()
-      val (sum, numberOfTries) = reactionController.reactionTestStream.takeWhile(_.inProgress).foldLeft((0, 0))((sum, result) => (sum._1 + result.reaction, result.numberOfTests))
-      logger.info(s"${sum / numberOfTries} ms avg response")
+      val result = reactionController.reactionTestStream.takeWhile(_.inProgress).foldLeft(Result())((result, currentTestResult) => result.addReactionTime(currentTestResult.reactionTime))
+      logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
       countDownLatch.countDown()
     }
 
@@ -42,6 +42,11 @@ class SessionHandler(pinController: PinController, reactionController: ReactionC
     logger.info("Reaction test session stopped!")
   }
 
+  case class Result(private val reactionTimes:List[Int]= List.empty){
+    def addReactionTime(reactionTime:Int) = copy(reactionTime :: reactionTimes)
+    def averageReactionTime = reactionTimes.sum / reactionTimes.size
+    def numberOfTests = reactionTimes.size
+  }
 }
 
 class ReactionController(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) extends StrictLogging {
@@ -67,7 +72,7 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
 
     Stream.continually {
       val (reactionTime, reactionProgressCounter) = runReactionTest
-      ReactionTestState(counter.getAndIncrement(), reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
+      CurrentReactionTestResult(reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
     }
   }
 
@@ -117,6 +122,6 @@ class ReactionController(pinController: PinController, reactionLedPulseLength: I
 
 object ReactionController {
 
-  case class ReactionTestState(numberOfTests: Int, reaction: Int, inProgress: Boolean)
+  case class CurrentReactionTestResult(reactionTime: Int, inProgress: Boolean)
 
 }

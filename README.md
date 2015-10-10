@@ -82,8 +82,12 @@ The test itself is a stream of individual reaction tests which is produced by a 
 ```scala
 Stream.continually {
   val (reactionTime, reactionProgressCounter) = runReactionTest
-  ReactionTestState(counter.getAndIncrement(), reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
+  CurrentReactionTestResult(reactionTime, verifyAggregatedResultBelowReactionThreshold(reactionProgressCounter) && notStopped)
 }
+```
+The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method.
+```scala
+val result = reactionController.reactionTestStream.takeWhile(_.inProgress).foldLeft(Result())((result, currentTestResult) => result.addReactionTime(currentTestResult.reactionTime))
 ```
 There are two competing events which could finish the iteration:
 - The led is going to be ON for a certain time. If it goes OFF the current test has been finished.  
