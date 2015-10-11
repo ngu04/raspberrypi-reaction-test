@@ -53,7 +53,7 @@ GPIO usage
 
 ### Implementation details
 The plan is to incrementally add new frameworks and see how I could implement the same functionality with different approaches
-- [Plain scala](gpio/README.md) :heavy_check_mark:
+- [Plain scala](gpio) :heavy_check_mark:
 - RxScala :x:
 - Actors :x:
 - Akka Stream :x:
