@@ -13,6 +13,7 @@ object Version {
   val pi4j          = "1.0"
   val scalaLogging  = "3.1.0"
   val logBack       = "1.1.3"
+  val rxScala       = "0.25.0"
 }
 
 object Library {
@@ -26,7 +27,9 @@ object Library {
   val scalaTest       = "org.scalatest"               %% "scalatest"                     % Version.scalaTest
   val pi4jDevice      = "com.pi4j"                    %  "pi4j-device"                   % Version.pi4j
   val scalaLogging    = "com.typesafe.scala-logging"  %% "scala-logging"                 % Version.scalaLogging
-  val logBack         = "ch.qos.logback"              % "logback-classic"                % Version.logBack
+  val logBack         = "ch.qos.logback"              %  "logback-classic"               % Version.logBack
+  val rxScala         = "io.reactivex"                %% "rxscala"                       % Version.rxScala
+
 }
 
 object Dependencies {
@@ -34,6 +37,31 @@ object Dependencies {
   import Library._
 
   val gpio = deps(
+    config,
+    jodaTime,
+    scalazCore,
+    pi4jDevice,
+    scalaLogging,
+    logBack,
+    mockito       	% "test",
+    akkaTestkit     % "test",
+    scalaTest     	% "test"
+  )
+
+  val rx = deps(
+    rxScala,
+    config,
+    jodaTime,
+    scalazCore,
+    pi4jDevice,
+    scalaLogging,
+    logBack,
+    mockito       	% "test",
+    akkaTestkit     % "test",
+    scalaTest     	% "test"
+  )
+
+  val actor = deps(
     akkaActor,
     akkaSlf4j,
     config,

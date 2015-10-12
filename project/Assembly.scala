@@ -11,4 +11,10 @@ object Assembly {
     assemblyJarName in assembly := "gpio.jar"
   )
 
+  lazy val rxAssemblySettings =
+    Seq(
+      mainClass in assembly := Some("org.kaloz.gpio.rx.RxGpioApp"),
+      mainClass in (Compile, run) := Some("org.kaloz.gpio.rx.RxGpioApp"),
+      assemblyJarName in assembly := "gpio-rx.jar"
+    )
 }
