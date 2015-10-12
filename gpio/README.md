@@ -21,15 +21,18 @@ stopButton.addStateChangeEventListener { event =>
 ```
 The test itself is a stream of individual reaction tests which is produced by a ***Stream*** 
 ```scala
-  Stream.continually {
-    runReactionTestIteration
-  }
+private def reactionTestStream(reactionTestResult: ReactionTestResult = ReactionTestResult()): Stream[ReactionTestResult] = {
+
+  ...
+  
+  reactionTestResult.addReactionTime(currentReactionTime) #:: reactionTestStream(reactionTestResult)
+}
 ```
-The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method. The result is aggregated in the **foldLeft** method. Booom..
+The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method. Every individual result is collected in the returned case class by the stream. The **last** method simply gives back the aggregated results. Booom..
 ```scala
-val result = reactionFlowController.reactionTestStream.takeWhile(_.inProgress).foldLeft(Result())((result, currentTestResult) => result.addReactionTime(currentTestResult.reactionTime))
+reactionTestStream().takeWhile(_ => progressIndicatorValueBelowTestEndThreshold()).last
 ```
-There are two competing events which could finish the iteration:
+There are two competing events which could terminate an iteration:
 - The led is going to be ON for a certain time. If it goes OFF the current test has been finished.  
 - The user has to push the proper button in time.
 The first event will define the outcome of the current iteration. ***Future combinators*** for everybody! 
