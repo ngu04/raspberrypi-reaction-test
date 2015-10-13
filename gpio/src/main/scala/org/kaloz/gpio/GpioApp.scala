@@ -1,12 +1,11 @@
 package org.kaloz.gpio
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicInteger
 
 import com.pi4j.io.gpio._
 import com.typesafe.scalalogging.StrictLogging
 import org.joda.time.DateTime
-import org.kaloz.gpio.ReactionFlowController.CurrentReactionTestResult
+import org.kaloz.gpio.ReactionFlowController.ReactionTestResult
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
@@ -22,7 +21,7 @@ object GpioApp extends App with GpioAppDI with StrictLogging {
 
 }
 
-class SessionHandler(pinController: PinController, reactionController: ReactionFlowController) extends StrictLogging {
+class SessionHandler(pinController: PinController, reactionFlowController: ReactionFlowController) extends StrictLogging {
 
   private val countDownLatch = new CountDownLatch(1)
 
@@ -33,19 +32,13 @@ class SessionHandler(pinController: PinController, reactionController: ReactionF
     startButton.addStateChangeEventListener { event =>
       logger.info("Reaction test session started!")
       startButton.removeAllListeners()
-      val result = reactionController.reactionTestStream.takeWhile(_.inProgress).foldLeft(Result())((result, currentTestResult) => result.addReactionTime(currentTestResult.reactionTime))
+      val result = reactionFlowController.runReactionTest()
       logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
       countDownLatch.countDown()
     }
 
     countDownLatch.await()
     logger.info("Reaction test session stopped!")
-  }
-
-  case class Result(private val reactionTimes:List[Int]= List.empty){
-    def addReactionTime(reactionTime:Int) = copy(reactionTime :: reactionTimes)
-    def averageReactionTime = reactionTimes.sum / reactionTimes.size
-    def numberOfTests = reactionTimes.size
   }
 }
 
@@ -57,23 +50,24 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
   private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed")).map(pinController.digitalOutputPin(_))
   private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton")).map(pinController.digitalInputPin(_))
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
-  private val counter = new AtomicInteger(1)
 
-  def reactionTestStream() = {
+  def runReactionTest(): ReactionTestResult = {
     reactionButtons.foreach(_.setDebounce(1000))
     val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
     stopButton.addStateChangeEventListener { event =>
       stopButton.removeAllListeners()
-      progressIndicatorLed.setPwm(Int.MaxValue)
-      logger.info(s"$counter. Reaction test session is interrupted!")
+      progressIndicatorLed.setPwm(testEndThreshold)
+      logger.debug("Reaction test is interrupted!")
     }
 
-    Stream.continually {
-      runReactionTestIteration
-    }
+    reactionTestStream().last
   }
 
-  private def runReactionTestIteration() = {
+  private def reactionTestStream(reactionTestResult: ReactionTestResult = ReactionTestResult()): Stream[ReactionTestResult] = {
+
+    val counter = reactionTestResult.numberOfTests + 1
+
+    def progressIndicatorValueBelowTestEndThreshold() = progressIndicatorLed.getPwm <= testEndThreshold
 
     def pulseTestLedAndWait(reactionTestType: Int): Future[Unit] = Future {
       reactionLeds(reactionTestType).pulse(reactionLedPulseLength, true)
@@ -94,8 +88,6 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
       promise.future
     }
 
-    def verifyProgressIndicatorValueBelowTestEndThreshold(progressIndicatorValue: Int) = progressIndicatorValue < testEndThreshold
-
     def reactionTest() = {
       Thread.sleep(WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS))
 
@@ -109,14 +101,16 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
         waitForUserReaction(reactionTestType)
       )), reactionLedPulseLength * 2 millis)
 
-      val reactionTime = (DateTime.now.getMillis - startTime).toInt
-      logger.debug(s"$counter. Reaction time is $reactionTime ms")
+      val currentReactionTime = (DateTime.now.getMillis - startTime).toInt
+      logger.info(s"$counter. Reaction time is $currentReactionTime ms")
 
-      progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + reactionTime / reactionCorrectionFactor)
+      progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + currentReactionTime / reactionCorrectionFactor)
 
-      CurrentReactionTestResult(reactionTime, verifyProgressIndicatorValueBelowTestEndThreshold(progressIndicatorLed.getPwm))
+      val currentTestResult = reactionTestResult.addReactionTime(currentReactionTime)
+      currentTestResult #:: (if (progressIndicatorValueBelowTestEndThreshold()) reactionTestStream(currentTestResult) else Stream.empty )
     }
 
+    logger.debug(s"$counter. current result $reactionTestResult")
     reactionTest()
   }
 
@@ -124,6 +118,12 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
 
 object ReactionFlowController {
 
-  case class CurrentReactionTestResult(reactionTime: Int, inProgress: Boolean)
+  case class ReactionTestResult(reactionTimes: List[Int] = List.empty) {
+    def addReactionTime(reactionTime: Int) = copy(reactionTime :: reactionTimes)
+
+    def averageReactionTime = reactionTimes.sum / reactionTimes.size
+
+    def numberOfTests = reactionTimes.size
+  }
 
 }
