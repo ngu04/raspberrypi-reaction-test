@@ -1,43 +1,45 @@
 package org.kaloz.gpio.rx
 
-import scala.concurrent.duration.DurationInt
+import java.util.concurrent.CountDownLatch
+
+import com.pi4j.io.gpio.PinState
+import com.typesafe.scalalogging.StrictLogging
+import org.kaloz.gpio.common.BcmPins.BCM_25
+
+import org.kaloz.gpio.common.BcmPinConversions._
 import scala.language.postfixOps
 import scala.language.implicitConversions
 
 import rx.lang.scala._
 
-object RxGpioApp extends App with RxGpioAppDI {
+object RxGpioApp extends App with RxGpioAppDI with StrictLogging {
 
-  val o = Observable.just(1, 2, 3)
+  logger.info("Start")
 
-  // Generally, we have two methods, `subscribe` and `foreach`, to listen to the messages from an Observable.
-  // `foreach` is just an alias to `subscribe`.
-//  o.subscribe(
-//    n => println(n),
-//    e => e.printStackTrace(),
-//    () => println("done")
-//  )
+  val countDownLatch = new CountDownLatch(1)
 
-  o.foreach(
+  val buttonObservable = Observable.create[PinState]({observer =>
+    val button = pinController.digitalInputPin(BCM_25("testButton"))
+    val listener = button.addStateChangeEventListener { event =>
+      observer.onNext(event.getState)
+    }
+    Subscription{
+      logger.info("Button unsubscribed...")
+      button.removeListener(listener)
+    }
+  }).take(4).last
+
+  val buttonSubscription = buttonObservable.subscribe(
     n => println(n),
     e => e.printStackTrace(),
-    () => println("done")
+    () => countDownLatch.countDown()
   )
 
-  // For-comprehension is also an alternative, if you are only interested in `onNext`
-  for (i <- o) {
-    println(i)
-  }
+  countDownLatch.await()
 
-  val o2 = Observable.interval(200 millis).take(5)
-  o2.subscribe(n => println("n = " + n))
+  buttonSubscription.unsubscribe()
 
-  // need to wait here because otherwise JUnit kills the thread created by interval()
-  waitFor(o2)
+  pinController.shutdown()
+  logger.info("Exit")
 
-  println("done")
-
-  def waitFor[T](obs: Observable[T]): Unit = {
-    obs.toBlocking.toIterable.last
-  }
 }

@@ -14,9 +14,12 @@ class PinController extends StrictLogging {
 
   private def provision(digitalPin: DigitalPin, pinMode: PinMode)(provisioner: GpioController => GpioPin): GpioPin =
     gpioController.getProvisionedPins.find(_.getName == digitalPin.name) match {
-      case None => provisioner(gpioController)
+      case None =>
+        val pi4jPin = provisioner(gpioController)
+        logger.info(s"Provisioning ${digitalPin.getClass.getSimpleName} - ${digitalPin.name}")
+        pi4jPin
       case Some(pi4jPin) if pi4jPin.getMode == pinMode => pi4jPin
-      case Some(pi4jPin) => throw new IllegalArgumentException(s"${digitalPin.getName} is already provisioned!!")
+      case Some(pi4jPin) => throw new IllegalArgumentException(s"${digitalPin.getName} is already provisioned with different pinMode - ${pi4jPin.getMode}!!")
     }
 
   private def setShutdownOptions(gpioPin: GpioPin): GpioPin = {
@@ -26,7 +29,7 @@ class PinController extends StrictLogging {
 
   def digitalInputPin(pin: DigitalPin, pinPullResistance: PinPullResistance = PinPullResistance.PULL_UP): GpioPinDigitalInput =
     provision(pin, PinMode.DIGITAL_INPUT) {
-      _.provisionDigitalInputPin(pin, pinPullResistance) |> setShutdownOptions
+      _.provisionDigitalInputPin(pin, pinPullResistance)
     }.asInstanceOf[GpioPinDigitalInput]
 
   def digitalOutputPin(pin: DigitalPin, defaultState: PinState = PinState.LOW): GpioPinDigitalOutput =
