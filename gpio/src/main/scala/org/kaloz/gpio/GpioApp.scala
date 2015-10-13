@@ -56,18 +56,18 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
     val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
     stopButton.addStateChangeEventListener { event =>
       stopButton.removeAllListeners()
-      progressIndicatorLed.setPwm(Int.MaxValue)
+      progressIndicatorLed.setPwm(testEndThreshold)
       logger.debug("Reaction test is interrupted!")
     }
 
-    reactionTestStream().takeWhile(_ => progressIndicatorValueBelowTestEndThreshold()).last
+    reactionTestStream().last
   }
-
-  private def progressIndicatorValueBelowTestEndThreshold() = progressIndicatorLed.getPwm < testEndThreshold
 
   private def reactionTestStream(reactionTestResult: ReactionTestResult = ReactionTestResult()): Stream[ReactionTestResult] = {
 
     val counter = reactionTestResult.numberOfTests + 1
+
+    def progressIndicatorValueBelowTestEndThreshold() = progressIndicatorLed.getPwm <= testEndThreshold
 
     def pulseTestLedAndWait(reactionTestType: Int): Future[Unit] = Future {
       reactionLeds(reactionTestType).pulse(reactionLedPulseLength, true)
@@ -102,13 +102,15 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
       )), reactionLedPulseLength * 2 millis)
 
       val currentReactionTime = (DateTime.now.getMillis - startTime).toInt
-      logger.debug(s"$counter. Reaction time is $currentReactionTime ms")
+      logger.info(s"$counter. Reaction time is $currentReactionTime ms")
 
       progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + currentReactionTime / reactionCorrectionFactor)
 
-      reactionTestResult.addReactionTime(currentReactionTime) #:: reactionTestStream(reactionTestResult)
+      val currentTestResult = reactionTestResult.addReactionTime(currentReactionTime)
+      currentTestResult #:: (if (progressIndicatorValueBelowTestEndThreshold()) reactionTestStream(currentTestResult) else Stream.empty )
     }
 
+    logger.debug(s"$counter. current result $reactionTestResult")
     reactionTest()
   }
 

@@ -25,12 +25,12 @@ private def reactionTestStream(reactionTestResult: ReactionTestResult = Reaction
 
   ...
   
-  reactionTestResult.addReactionTime(currentReactionTime) #:: reactionTestStream(reactionTestResult)
+   currentTestResult #:: (if (progressIndicatorValueBelowTestEndThreshold()) reactionTestStream(currentTestResult) else Stream.empty )
 }
 ```
-The stream produces the next iteration as long as the red led doesn't reach its brightest state. Effectively it is managed by the **takeWhile** method. Every individual result is collected in the returned case class by the stream. The **last** method simply gives back the aggregated results. Booom..
+The stream produces the next iteration as long as the red led doesn't reach its brightest state. The **last** method simply gives back the aggregated results. Booom..
 ```scala
-reactionTestStream().takeWhile(_ => progressIndicatorValueBelowTestEndThreshold()).last
+reactionTestStream().last
 ```
 There are two competing events which could terminate an iteration:
 - The led is going to be ON for a certain time. If it goes OFF the current test has been finished.  
