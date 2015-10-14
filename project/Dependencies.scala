@@ -48,33 +48,6 @@ object Dependencies {
     scalaTest     	% "test"
   )
 
-  val rx = deps(
-    rxScala,
-    config,
-    jodaTime,
-    scalazCore,
-    pi4jDevice,
-    scalaLogging,
-    logBack,
-    mockito       	% "test",
-    akkaTestkit     % "test",
-    scalaTest     	% "test"
-  )
-
-  val actor = deps(
-    akkaActor,
-    akkaSlf4j,
-    config,
-    jodaTime,
-    scalazCore,
-    pi4jDevice,
-    scalaLogging,
-    logBack,
-    mockito       	% "test",
-    akkaTestkit     % "test",
-    scalaTest     	% "test"
-  )
-
   val common = deps(
     jodaTime,
     scalazCore,
