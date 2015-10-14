@@ -25,8 +25,8 @@ That is it!
 
 ### Project structure
 In order to be able to try different approaches there are multiple modules in the project:
-- **common** - it contains the reusable parts
-- **gpio** - it contains the base implementation. Future combinators, promise, stream
+- [common](common) - it contains the reusable parts
+- [gpio](gpio) - it contains the base implementation. Future combinators, promise, stream
 - **rx** - it ***will*** contain the RxScala implementation
 - **actor** - it ***will*** contain the actor based implementation
 - **stream** - it ***will*** contain the akka stream solution
