@@ -1,4 +1,5 @@
-## Raspberry Pi reaction test
+## Raspberry Pi reaction test 
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/2bdf2ea380b24871b9f52d878005a87b)](https://www.codacy.com/app/krisztian-lachata/raspberrypi-reaction-test)
 I am always amazed when I see nicely crafted software components. I admire developers who take the time and try to deliver something functional meanwhile it is also fun to read. 
 I don't claim that I always fulfil my own criteria but at least I am striving.
 What I like even more is when a software component has its hardware counterpart and they are working together to materialize the functionality in some physical effects. Based on this motive eventually I persuaded myself to buy a Raspberry Pi Model 2 with some extensions to be able build my own sandbox.
