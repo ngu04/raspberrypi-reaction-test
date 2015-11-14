@@ -28,13 +28,15 @@ class SessionHandler(pinController: PinController, reactionFlowController: React
   def runSession = {
     logger.info("Reaction test is waiting to be started!")
 
-    val startButton = pinController.digitalInputPin(BCM_25("Start"))
+    val startButton = pinController.digitalInputPin(BCM_25("StartStop"))
     startButton.addStateChangeEventListener { event =>
-      logger.info("Reaction test session started!")
-      startButton.removeAllListeners()
-      val result = reactionFlowController.runReactionTest()
-      logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
-      countDownLatch.countDown()
+      if (event.getState == PinState.LOW) {
+        logger.info("Reaction test session started!")
+        startButton.removeAllListeners()
+        val result = reactionFlowController.runReactionTest()
+        logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
+        countDownLatch.countDown()
+      }
     }
 
     countDownLatch.await()
@@ -47,17 +49,19 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
   private val WAIT_OFFSET_IN_MILLIS = 3000
   private val WAIT_OFFSET_RANDOM_IN_MILLIS = 3000
 
-  private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed")).map(pinController.digitalOutputPin(_))
-  private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton")).map(pinController.digitalInputPin(_))
+  private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed"), BCM_20("BlueLed")).map(pinController.digitalOutputPin(_))
+  private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton"), BCM_24("BlueLedButton")).map(pinController.digitalInputPin(_))
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
 
   def runReactionTest(): ReactionTestResult = {
     reactionButtons.foreach(_.setDebounce(1000))
-    val stopButton = pinController.digitalInputPin(BCM_24("Stop"))
+    val stopButton = pinController.digitalInputPin(BCM_25("StartStop"))
     stopButton.addStateChangeEventListener { event =>
-      stopButton.removeAllListeners()
-      progressIndicatorLed.setPwm(testEndThreshold)
-      logger.debug("Reaction test is interrupted!")
+      if (event.getState == PinState.LOW) {
+        stopButton.removeAllListeners()
+        progressIndicatorLed.setPwm(testEndThreshold)
+        logger.debug("Reaction test is interrupted!")
+      }
     }
 
     reactionTestStream().last
@@ -80,9 +84,11 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
 
       logger.debug(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
       reactionButtons(reactionTestType).addStateChangeEventListener { event =>
-        logger.debug(s"$counter. button pushed")
-        reactionLeds(reactionTestType).setState(PinState.LOW)
-        promise.success((): Unit)
+        if (event.getState == PinState.LOW) {
+          logger.debug(s"$counter. button pushed")
+          reactionLeds(reactionTestType).setState(PinState.LOW)
+          promise.success((): Unit)
+        }
       }
 
       promise.future
@@ -107,7 +113,7 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
       progressIndicatorLed.setPwm(progressIndicatorLed.getPwm + currentReactionTime / reactionCorrectionFactor)
 
       val currentTestResult = reactionTestResult.addReactionTime(currentReactionTime)
-      currentTestResult #:: (if (progressIndicatorValueBelowTestEndThreshold()) reactionTestStream(currentTestResult) else Stream.empty )
+      currentTestResult #:: (if (progressIndicatorValueBelowTestEndThreshold()) reactionTestStream(currentTestResult) else Stream.empty)
     }
 
     logger.debug(s"$counter. current result $reactionTestResult")

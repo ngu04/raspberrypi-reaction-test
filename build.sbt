@@ -7,6 +7,6 @@ lazy val common = Project("common", file("common"))
 
 lazy val gpio = Project("gpio", file("gpio"))
   .dependsOn(common)
-  .settings(BaseSettings.settings: _*)
+  .settings(BaseSettings.javaagentSettings: _*)
   .settings(Dependencies.gpio: _*)
   .settings(Assembly.gpioAssemblySettings: _*)

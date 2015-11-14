@@ -4,6 +4,8 @@ import net.virtualvoid.sbt.graph.Plugin
 
 object BaseSettings {
 
+  lazy val javaagent = "-javaagent:" + System.getProperty("user.home") + "/.ivy2/cache/org.aspectj/aspectjweaver/jars/aspectjweaver-1.8.7.jar"
+
   lazy val settings =
   Seq(
     version := "1.0.0",
@@ -28,6 +30,13 @@ object BaseSettings {
   ) ++
   ResolverSettings.settings ++
   Testing.settings ++
-  Plugin.graphSettings
+  Plugin.graphSettings ++
+  Aliases.aliases
+
+  //Required by Aspects
+  lazy val javaagentSettings = settings ++ Seq(
+    javaOptions in run ++= Seq(javaagent, "-Dpi4j.client.mode=remote"),
+    fork in run := true
+  )
 
 }

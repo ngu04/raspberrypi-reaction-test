@@ -14,6 +14,7 @@ object Version {
   val scalaLogging  = "3.1.0"
   val logBack       = "1.1.3"
   val rxScala       = "0.25.0"
+  val pi4jClient    = "0.1.0-SNAPSHOT"
 }
 
 object Library {
@@ -29,6 +30,9 @@ object Library {
   val scalaLogging    = "com.typesafe.scala-logging"  %% "scala-logging"                 % Version.scalaLogging
   val logBack         = "ch.qos.logback"              %  "logback-classic"               % Version.logBack
   val rxScala         = "io.reactivex"                %% "rxscala"                       % Version.rxScala
+  val pi4jClientCore  = "org.kaloz.pi4j.client"       %  "core"                          % Version.pi4jClient
+  val pi4jClientRemote   = "org.kaloz.pi4j.client"       %  "remote-client"                 % Version.pi4jClient
+  val pi4jClientConsole  = "org.kaloz.pi4j.client"       %  "console-client"                % Version.pi4jClient
 
 }
 
@@ -40,6 +44,9 @@ object Dependencies {
     config,
     jodaTime,
     scalazCore,
+    pi4jClientCore,
+    pi4jClientRemote,
+    pi4jClientConsole,
     pi4jDevice,
     scalaLogging,
     logBack,
