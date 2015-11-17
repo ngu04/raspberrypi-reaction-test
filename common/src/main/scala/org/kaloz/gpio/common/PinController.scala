@@ -27,6 +27,8 @@ class PinController extends StrictLogging {
     gpioPin
   }
 
+  def unprovisionPin(pin: GpioPin): Unit = gpioController.unprovisionPin(pin)
+
   def digitalInputPin(pin: DigitalPin, pinPullResistance: PinPullResistance = PinPullResistance.PULL_UP): GpioPinDigitalInput =
     provision(pin, PinMode.DIGITAL_INPUT) {
       _.provisionDigitalInputPin(pin, pinPullResistance)
