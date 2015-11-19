@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
 
-object ResolverSettings {
+object Resolvers {
 
   lazy val settings = Seq(resolvers ++=
     Seq(

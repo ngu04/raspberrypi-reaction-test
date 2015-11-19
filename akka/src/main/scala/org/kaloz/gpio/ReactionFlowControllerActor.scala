@@ -18,59 +18,60 @@ import scala.concurrent.duration._
 import scala.util.{Random, Try}
 import scalaz.Scalaz._
 
-class ReactionFlowControllerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) extends FSM[ReactionFlowState, FlowState] with ActorLogging {
+class ReactionFlowControllerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) extends FSM[ReactionFlowState, FlowStateData] with ActorLogging {
 
   private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed"), BCM_20("BlueLed")).map(pinController.digitalOutputPin(_))
   private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton"), BCM_24("BlueLedButton")).map(pinController.digitalInputPin(_))
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
   reactionButtons.foreach(_.setDebounce(2000))
 
-  val singleLedReactionTestActor = context.system.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength))
-  val userDataActor = context.system.actorOf(UserDataActor.props)
-  val abortButton = pinController.digitalInputPin(BCM_25("AbortTest"))
+  private val singleLedReactionTestActor = context.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTestActor")
+  private val userDataActor = context.actorOf(UserDataActor.props, "userDataActor")
+  private val abortButton = pinController.digitalInputPin(BCM_25("AbortTest"))
 
-  initialize()
-
-  startWith(WaitingStartTestFlow, FlowState())
+  startWith(WaitingStartTestFlow, FlowStateData())
 
   when(WaitingStartTestFlow) {
     case Event(StartTestFlow, _) =>
+      log.info("Reaction test session started! Waiting for user data...")
       initFlow()
       goto(WaitingUserRegistration)
   }
 
   when(WaitingUserRegistration) {
-    case Event(user: User, state: FlowState) =>
+    case Event(user: User, state: FlowStateData) =>
+      log.info(s"User data arrived for $user")
       startSingleLedTest()
       goto(WaitingSingleLedTestFinish) using state.withUser(user)
   }
 
   when(WaitingSingleLedTestFinish) {
-    case Event(SingleLedReactionTestResult(reactionTime), state: FlowState) =>
+    case Event(SingleLedReactionTestResult(reactionTime), state@FlowStateData(Some(user), _)) =>
       val newState = state.addReactionTime(reactionTime)
       val reactionPoints = newState.reactionTimes.map(_ / reactionCorrectionFactor).sum
+      log.info(s"Current state: reactionTime -> $reactionTime ms, reactionPoints -> $reactionPoints, reactionThreshold -> $reactionThreshold")
       progressIndicatorLed.setPwm(reactionPoints)
       if (reactionPoints <= reactionThreshold) {
         startSingleLedTest()
         stay() using newState
       } else {
-        stop(FSM.Normal) using newState
+        context.parent ! SaveReactionTestResultCmd(TestResult(user, Result(iterations = newState.numberOfTests, avg = newState.averageReactionTime, std = newState.standardDeviation)))
+        goto(WaitingStartTestFlow) using FlowStateData()
       }
-    case Event(AbortTestFlow, _) => stop(FSM.Shutdown)
   }
 
-  val removeListenerHandler: PartialFunction[StopEvent, StopEvent] = {
-    case x => abortButton.removeAllListeners(); x
+  onTransition {
+    case x -> WaitingStartTestFlow => abortButton.removeAllListeners()
   }
 
-  val terminationHandler: PartialFunction[StopEvent, Unit] = {
-    case StopEvent(FSM.Normal, _, state@FlowState(Some(user), _, _, _, _)) =>
-      context.parent ! SaveReactionTestResultCmd(TestResult(user, Result(iterations = state.numberOfTests, avg = state.averageReactionTime, std = state.standardDeviation)))
-    case StopEvent(FSM.Shutdown, _, FlowState(Some(user), _, _, _, _)) =>
-      context.parent ! TestAbortedEvent(user)
+  whenUnhandled {
+    case Event(AbortTestFlow, FlowStateData(userOption, _)) =>
+      context.parent ! TestAbortedEvent(userOption)
+      singleLedReactionTestActor ! TerminateSingleLedReactionTest
+      goto(WaitingStartTestFlow) using FlowStateData()
   }
 
-  onTermination(removeListenerHandler.andThen(terminationHandler))
+  initialize()
 
   def startSingleLedTest(): Unit = {
     val reactionTestType = Random.nextInt(reactionLeds.size)
@@ -80,11 +81,9 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   def initFlow() = {
     progressIndicatorLed.setPwm(0)
     userDataActor ! GetUser
-    abortButton.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        abortButton.removeAllListeners()
-        self ! AbortTestFlow
-      }
+    abortButton.addStateChangeFallEventListener { event =>
+      abortButton.removeAllListeners()
+      self ! AbortTestFlow
     }
   }
 }
@@ -106,7 +105,7 @@ object ReactionFlowControllerActor {
 
   case object AbortTestFlow extends ReactionFlowMessage
 
-  case class FlowState(user: Option[User] = None, reactionTimes: List[Int] = List.empty) {
+  case class FlowStateData(user: Option[User] = None, reactionTimes: List[Int] = List.empty) {
 
     def withUser(user: User) = copy(user = user.some)
 
@@ -121,34 +120,40 @@ object ReactionFlowControllerActor {
 
 }
 
-class SingleLedReactionTestActor(reactionLedPulseLength: Int) extends FSM[SingleTestState, TestState] with ActorLogging {
+class SingleLedReactionTestActor(reactionLedPulseLength: Int) extends FSM[SingleTestState, TestStateData] with ActorLogging {
 
   private val WAIT_OFFSET_IN_MILLIS = 3000
   private val WAIT_OFFSET_RANDOM_IN_MILLIS = 3000
 
-  initialize()
-
-  startWith(WaitingStartSignal, TestState())
+  startWith(WaitingStartSignal, TestStateData())
 
   when(WaitingStartSignal) {
     case Event(StartSingleLedReactionTest(ledPin, button), _) =>
-      context.system.scheduler.scheduleOnce((WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS)) millis, self, SwitchOnLed)
-      goto(WaitingRandomTimeExpiry) using TestState(ledPin.some, button.some)
+      val cancellable = context.system.scheduler.scheduleOnce((WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS)) millis, self, SwitchOnLed)
+      goto(WaitingRandomTimeExpiry) using TestStateData(ledPin.some, button.some, cancellable.some)
   }
 
   when(WaitingRandomTimeExpiry) {
-    case Event(SwitchOnLed, state@TestState(Some(ledPin), Some(button), None)) =>
+    case Event(SwitchOnLed, state@TestStateData(Some(ledPin), Some(button), _, None)) =>
       Future.sequence(Seq(pulseTestLedAndWait(ledPin), waitForUserReaction(button)))
       goto(WaitingUserReaction) using state.withStartTime()
   }
 
   when(WaitingUserReaction) {
-    case Event(SwitchOffLed, TestState(Some(ledPin), Some(button), Some(startTime))) =>
+    case Event(SwitchOffLed, TestStateData(Some(ledPin), Some(button), _, Some(startTime))) =>
       button.removeAllListeners()
       ledPin.setState(PinState.LOW)
       context.parent ! SingleLedReactionTestResult((DateTime.now.getMillis - startTime).toInt)
-      goto(WaitingStartSignal) using TestState()
+      goto(WaitingStartSignal) using TestStateData()
   }
+
+  whenUnhandled {
+    case Event(TerminateSingleLedReactionTest, TestStateData(_, _, cancellable, _)) =>
+      cancellable.foreach(_.cancel())
+      goto(WaitingStartSignal) using TestStateData()
+  }
+
+  initialize()
 
   def pulseTestLedAndWait(ledPin: GpioPinDigitalOutput): Future[Unit] = Future {
     ledPin.pulse(reactionLedPulseLength, true)
@@ -156,11 +161,7 @@ class SingleLedReactionTestActor(reactionLedPulseLength: Int) extends FSM[Single
   }
 
   def waitForUserReaction(button: GpioPinDigitalInput): Future[Unit] = Future {
-    button.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        self ! SwitchOffLed
-      }
-    }
+    button.addStateChangeFallEventListener { _ => self ! SwitchOffLed }
   }
 }
 
@@ -180,14 +181,16 @@ object SingleLedReactionTestActor {
 
   case class StartSingleLedReactionTest(ledPin: GpioPinDigitalOutput, button: GpioPinDigitalInput) extends SingleLedReactionTestMessage
 
+  case object TerminateSingleLedReactionTest extends SingleLedReactionTestMessage
+
   case object SwitchOnLed extends SingleLedReactionTestMessage
 
   case object SwitchOffLed extends SingleLedReactionTestMessage
 
   case class SingleLedReactionTestResult(reactionTime: Int) extends SingleLedReactionTestMessage
 
-  case class TestState(ledPin: Option[GpioPinDigitalOutput] = None, button: Option[GpioPinDigitalInput] = None, startTime: Option[Long] = None) {
-    def withStartTime() = copy(startTime = DateTime.now.getMillis.some)
+  case class TestStateData(ledPin: Option[GpioPinDigitalOutput] = None, button: Option[GpioPinDigitalInput] = None, cancellable: Option[Cancellable] = None, startTime: Option[Long] = None) {
+    def withStartTime() = copy(cancellable = None, startTime = DateTime.now.getMillis.some)
   }
 
 }

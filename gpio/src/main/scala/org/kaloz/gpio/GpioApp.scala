@@ -29,14 +29,12 @@ class SessionHandler(pinController: PinController, reactionFlowController: React
     logger.info("Reaction test is waiting to be started!")
 
     val startButton = pinController.digitalInputPin(BCM_25("StartStop"))
-    startButton.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        logger.info("Reaction test session started!")
-        startButton.removeAllListeners()
-        val result = reactionFlowController.runReactionTest()
-        logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
-        countDownLatch.countDown()
-      }
+    startButton.addStateChangeFallEventListener { event =>
+      logger.info("Reaction test session started!")
+      startButton.removeAllListeners()
+      val result = reactionFlowController.runReactionTest()
+      logger.info(s"${result.averageReactionTime} ms avg response time in ${result.numberOfTests} tests")
+      countDownLatch.countDown()
     }
 
     countDownLatch.await()
@@ -56,12 +54,10 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
   def runReactionTest(): ReactionTestResult = {
     reactionButtons.foreach(_.setDebounce(1000))
     val stopButton = pinController.digitalInputPin(BCM_25("StartStop"))
-    stopButton.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        stopButton.removeAllListeners()
-        progressIndicatorLed.setPwm(testEndThreshold)
-        logger.debug("Reaction test is interrupted!")
-      }
+    stopButton.addStateChangeFallEventListener { event =>
+      stopButton.removeAllListeners()
+      progressIndicatorLed.setPwm(testEndThreshold)
+      logger.debug("Reaction test is interrupted!")
     }
 
     reactionTestStream().last
@@ -83,12 +79,10 @@ class ReactionFlowController(pinController: PinController, reactionLedPulseLengt
       val promise = Promise[Unit]
 
       logger.debug(s"$counter. start listener for ${reactionLeds(reactionTestType)}")
-      reactionButtons(reactionTestType).addStateChangeEventListener { event =>
-        if (event.getState == PinState.LOW) {
-          logger.debug(s"$counter. button pushed")
-          reactionLeds(reactionTestType).setState(PinState.LOW)
-          promise.success((): Unit)
-        }
+      reactionButtons(reactionTestType).addStateChangeFallEventListener { event =>
+        logger.debug(s"$counter. button pushed")
+        reactionLeds(reactionTestType).setState(PinState.LOW)
+        promise.success((): Unit)
       }
 
       promise.future

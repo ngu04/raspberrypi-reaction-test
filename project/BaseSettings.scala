@@ -1,6 +1,6 @@
-import sbt._
-import Keys._
 import net.virtualvoid.sbt.graph.Plugin
+import sbt.Keys._
+import sbt._
 
 object BaseSettings {
 
@@ -28,7 +28,7 @@ object BaseSettings {
     ),
     shellPrompt := { s => "[" + scala.Console.BLUE + Project.extract(s).currentProject.id + scala.Console.RESET + "] $ "}
   ) ++
-  ResolverSettings.settings ++
+    Resolvers.settings ++
   Testing.settings ++
   Plugin.graphSettings ++
   Aliases.aliases

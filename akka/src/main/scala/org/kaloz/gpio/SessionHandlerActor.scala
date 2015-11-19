@@ -5,7 +5,6 @@ import java.util.UUID
 import akka.actor.{ActorLogging, Props}
 import akka.event.LoggingReceive
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import com.pi4j.io.gpio.PinState
 import org.joda.time.DateTime
 import org.kaloz.gpio.ReactionFlowControllerActor.StartTestFlow
 import org.kaloz.gpio.SessionHandlerActor.{ReactionTestResultArrivedEvent, SaveReactionTestResultCmd, TestAbortedEvent}
@@ -19,23 +18,24 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
 
   val startButton = pinController.digitalInputPin(BCM_25("Start"))
   val resultButton = pinController.digitalInputPin(BCM_24("Result"))
+  val reactionFlowControllerActor = context.actorOf(ReactionFlowControllerActor.props(pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold), "reactionFlowControllerActor")
 
-  var reactonTestState = ReactionTestState()
+  var reactionTestState = ReactionTestState()
 
   initializeDefaultButtons()
 
   override def receiveRecover: Receive = {
     case SnapshotOffer(_, offeredSnapshot: ReactionTestState) =>
-      reactonTestState = offeredSnapshot
-      log.info(s"Snapshot has been loaded with ${reactonTestState.testResults.size} test results!")
+      reactionTestState = offeredSnapshot
+      log.info(s"Snapshot has been loaded with ${reactionTestState.testResults.size} test results!")
   }
 
   def updateState(evt: ReactionTestResultArrivedEvent): Unit = {
-    reactonTestState = reactonTestState.update(evt.testResult)
-    saveSnapshot(reactonTestState)
+    reactionTestState = reactionTestState.update(evt.testResult)
+    saveSnapshot(reactionTestState)
     log.info(s"Result for ${evt.testResult.user.userName} has been persested!")
     log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
-    log.info(s"Position with the best of the user is ${reactonTestState.positionOf(evt.testResult.user)}")
+    log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
 
     initializeDefaultButtons()
   }
@@ -43,29 +43,22 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   override def receiveCommand: Receive = LoggingReceive {
     case SaveReactionTestResultCmd(testResult) =>
       persist(ReactionTestResultArrivedEvent(testResult))(updateState)
-    //      sender ! PoisonPill
-    case TestAbortedEvent(user) =>
-      log.info(s"Test is aborted for user $user")
-      //      sender ! PoisonPill
+    case TestAbortedEvent(userOption) =>
+      userOption.fold(log.info(s"Test is aborted without user data..")) { user => log.info(s"Test is aborted for user $user") }
       initializeDefaultButtons()
   }
 
   private def initializeDefaultButtons() = {
     log.info("Waiting test to be started!!")
-    startButton.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        log.info("Reaction test session started!")
-        startButton.removeAllListeners()
-        resultButton.removeAllListeners()
-        context.system.actorOf(ReactionFlowControllerActor.props(pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold)) ! StartTestFlow
-      }
+    startButton.addStateChangeFallEventListener { event =>
+      startButton.removeAllListeners()
+      resultButton.removeAllListeners()
+      reactionFlowControllerActor ! StartTestFlow
     }
-    resultButton.addStateChangeEventListener { event =>
-      if (event.getState == PinState.LOW) {
-        log.info(s"Results!! ${reactonTestState.take(numberOfWinners)}")
-        pinController.shutdown()
-        context.system.terminate()
-      }
+    resultButton.addStateChangeFallEventListener { event =>
+      log.info(s"Results!! ${reactionTestState.take(numberOfWinners)}")
+      pinController.shutdown()
+      context.system.terminate()
     }
   }
 }
@@ -75,12 +68,11 @@ object SessionHandlerActor {
 
   case class SaveReactionTestResultCmd(testResult: TestResult)
 
-  case class TestAbortedEvent(user: User)
+  case class TestAbortedEvent(user: Option[User])
 
   case class ReactionTestResultArrivedEvent(testResult: TestResult)
 
 }
-
 
 case class ReactionTestState(testResults: List[TestResult] = List.empty) {
   def update(testResult: TestResult) = copy(testResult :: testResults)
