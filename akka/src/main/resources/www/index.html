@@ -2,11 +2,13 @@
 <html ng-app="webClient">
 <head>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular-route.min.js"></script>
 
-    <script src="js/controller.js"></script>
+    <script src="js/app.js"></script>
 
     <style>
         td.truncated {
@@ -19,47 +21,7 @@
 </head>
 <body ng-controller="Controller">
 
-<div class="container" style="margin-top: 20px">
-    <div class="col-md-6">
-        <p>
-            <img src="http://www.techweekeurope.co.uk/wp-content/uploads/2015/02/Sky-logo-600x374.png" width="75%">
-        </p>
-        <p>
-            <h1>Web client for pi4j-client</h1>
-        </p>
-        <p class="lead">This message is some bla bla for now.</p>
-        <p>
-            <form ng-submit="play()">
-                <div class="input-group">
-                    <input type="email" class="form-control" placeholder="Email address" ng-disabled="formDisabled" ng-model="email">
-                    <span class="input-group-btn">
-                        <button class="btn btn-default" type="button" ng-click="play()" ng-disabled="formDisabled">Play</button>
-                    </span>
-                </div>
-            </form>
-        </p>
-    </div>
-    <div class="col-md-6">
-        <p class="lead">Top 10 results:</p>
-        <p>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Email</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr ng-repeat="player in players | orderBy: 'score' | limitTo: 10">
-                        <td>{{ $index + 1 }}</td>
-                        <td class="truncated">{{ player.email }}</td>
-                        <td>{{ player.score }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </p>
-    </div>
+<div class="container" style="margin-top: 20px" ng-view>
 </div>
 
 </body>

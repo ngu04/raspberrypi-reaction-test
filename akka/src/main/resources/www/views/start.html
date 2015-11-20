@@ -1,0 +1,13 @@
+<div class="col-md-6">
+    <div ng-include="'views/heading.html'"></div>
+    <p>
+        <form ng-submit="register()">
+            <div class="input-group">
+                <input type="email" class="form-control" placeholder="Email address" ng-disabled="gameInProgress" ng-model="email" required>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" ng-disabled="gameInProgress">Play</button>
+                </span>
+            </div>
+        </form>
+    </p>
+</div>
