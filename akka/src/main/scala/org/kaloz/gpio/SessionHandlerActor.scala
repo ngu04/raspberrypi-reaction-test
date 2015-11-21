@@ -51,8 +51,7 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
     case TestAbortedEvent(userOption) =>
       userOption.fold(log.info(s"Test is aborted without user data..")) { user => log.info(s"Test is aborted for user $user") }
       initializeDefaultButtons()
-    case ReactionTestStateRequest =>
-      context.system.eventStream.publish(reactionTestState)
+    case ReactionTestStateRequest => sender ! reactionTestState
   }
 
   private def initializeDefaultButtons() = {
