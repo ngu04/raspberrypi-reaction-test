@@ -92,7 +92,9 @@ case class ReactionTestState(testResults: List[TestResult] = List.empty) {
   def positionOf(user: User) = testResults.groupBy(_.user).values.map(_.sorted.head).toList.sorted.zipWithIndex.filter(item => item._1.user == user).head.swap
 }
 
-case class TestResult(user: User, result: Result)
+case class TestResult(user: User, result: Result) extends Ordered[TestResult] {
+  def compare(that: TestResult): Int = result compare that.result
+}
 
 case class User(name: String, email: String, comments: Option[String])
 
