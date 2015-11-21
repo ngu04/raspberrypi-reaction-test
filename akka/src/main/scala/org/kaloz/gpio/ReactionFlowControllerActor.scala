@@ -1,16 +1,15 @@
 package org.kaloz.gpio
 
 import akka.actor._
-import akka.event.LoggingReceive
 import com.pi4j.io.gpio.{GpioPinDigitalInput, GpioPinDigitalOutput, PinState}
 import org.joda.time.DateTime
 import org.kaloz.gpio.ReactionFlowControllerActor._
 import org.kaloz.gpio.SessionHandlerActor.{SaveReactionTestResultCmd, TestAbortedEvent}
 import org.kaloz.gpio.SingleLedReactionTestActor._
-import org.kaloz.gpio.UserDataActor.GetUser
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.web.WebSocketActor.{RegistrationClosed, RegistrationOpened}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -26,10 +25,11 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   reactionButtons.foreach(_.setDebounce(2000))
 
   private val singleLedReactionTestActor = context.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTestActor")
-  private val userDataActor = context.actorOf(UserDataActor.props, "userDataActor")
   private val abortButton = pinController.digitalInputPin(BCM_25("AbortTest"))
 
   startWith(WaitingStartTestFlow, FlowStateData())
+
+  context.system.eventStream.subscribe(self, classOf[User])
 
   when(WaitingStartTestFlow) {
     case Event(StartTestFlow, _) =>
@@ -42,6 +42,7 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
     case Event(user: User, state: FlowStateData) =>
       log.info(s"User data arrived for $user")
       startSingleLedTest()
+      context.system.eventStream.publish(RegistrationClosed)
       goto(WaitingSingleLedTestFinish) using state.withUser(user)
   }
 
@@ -80,7 +81,7 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
 
   def initFlow() = {
     progressIndicatorLed.setPwm(0)
-    userDataActor ! GetUser
+    context.system.eventStream.publish(RegistrationOpened)
     abortButton.addStateChangeFallEventListener { event =>
       abortButton.removeAllListeners()
       self ! AbortTestFlow
@@ -192,21 +193,5 @@ object SingleLedReactionTestActor {
   case class TestStateData(ledPin: Option[GpioPinDigitalOutput] = None, button: Option[GpioPinDigitalInput] = None, cancellable: Option[Cancellable] = None, startTime: Option[Long] = None) {
     def withStartTime() = copy(cancellable = None, startTime = DateTime.now.getMillis.some)
   }
-
-}
-
-class UserDataActor extends Actor with ActorLogging {
-
-  val users = List("krs", "tomi", "maki", "ima", "ilda", "bilda")
-
-  override def receive: Receive = LoggingReceive {
-    case GetUser => sender ! User(users(Random.nextInt(users.size)), "krs@krs.hu", "test")
-  }
-}
-
-object UserDataActor {
-  def props = Props[UserDataActor]
-
-  case object GetUser
 
 }

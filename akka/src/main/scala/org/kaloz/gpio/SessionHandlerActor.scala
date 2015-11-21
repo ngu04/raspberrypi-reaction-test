@@ -11,8 +11,11 @@ import org.kaloz.gpio.SessionHandlerActor.{ReactionTestResultArrivedEvent, SaveR
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins.{BCM_24, BCM_25}
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.web.WebSocketActor.RegistrationOpened
 
 class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) extends PersistentActor with ActorLogging {
+
+  context.system.eventStream.subscribe(self, ReactionTestStateRequest.getClass)
 
   override val persistenceId: String = "sessionHandlerActor"
 
@@ -33,7 +36,7 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   def updateState(evt: ReactionTestResultArrivedEvent): Unit = {
     reactionTestState = reactionTestState.update(evt.testResult)
     saveSnapshot(reactionTestState)
-    log.info(s"Result for ${evt.testResult.user.userName} has been persested!")
+    log.info(s"Result for ${evt.testResult.user.name} has been persisted!")
     log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
     log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
 
@@ -43,9 +46,12 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   override def receiveCommand: Receive = LoggingReceive {
     case SaveReactionTestResultCmd(testResult) =>
       persist(ReactionTestResultArrivedEvent(testResult))(updateState)
+      context.system.eventStream.publish(reactionTestState)
+      context.system.eventStream.publish(RegistrationOpened)
     case TestAbortedEvent(userOption) =>
       userOption.fold(log.info(s"Test is aborted without user data..")) { user => log.info(s"Test is aborted for user $user") }
       initializeDefaultButtons()
+    case ReactionTestStateRequest => sender ! reactionTestState
   }
 
   private def initializeDefaultButtons() = {
@@ -74,6 +80,8 @@ object SessionHandlerActor {
 
 }
 
+case object ReactionTestStateRequest
+
 case class ReactionTestState(testResults: List[TestResult] = List.empty) {
   def update(testResult: TestResult) = copy(testResult :: testResults)
 
@@ -88,7 +96,7 @@ case class TestResult(user: User, result: Result) extends Ordered[TestResult] {
   def compare(that: TestResult): Int = result compare that.result
 }
 
-case class User(userName: String, email: String, desc: String, phone: Option[String] = None)
+case class User(name: String, email: String, comments: Option[String])
 
 case class Result(id: String = UUID.randomUUID().toString, startTime: DateTime = DateTime.now(), iterations: Int, avg: Int, std: Double) extends Ordered[Result] {
   def compare(that: Result): Int =

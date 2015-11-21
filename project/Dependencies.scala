@@ -5,6 +5,7 @@ object Version {
 
   val akka = "2.4.0"
   val akkaPersistence = "2.3.14"
+  val akkaHttp = "1.0"
   val jodaTime = "2.8.2"
   val scalazCore = "7.1.3"
   val scalaTest = "2.2.0"
@@ -17,6 +18,7 @@ object Version {
   val rxScala = "0.25.0"
   val pi4jClient = "0.1.0-SNAPSHOT"
   val mongoPersitence = "0.7.6"
+  val json4s = "3.3.0"
 }
 
 object Library {
@@ -35,7 +37,10 @@ object Library {
   val logBack = "ch.qos.logback" % "logback-classic" % Version.logBack
   val rxScala = "io.reactivex" %% "rxscala" % Version.rxScala
   val pi4jClientCore = "org.kaloz.pi4j.client" % "core" % Version.pi4jClient
-  val pi4jClientRemote   = "org.kaloz.pi4j.client"       %  "remote-client"                 % Version.pi4jClient
+  val pi4jClientRemote = "org.kaloz.pi4j.client" %  "remote-client" % Version.pi4jClient
+  val akkaHttp = "com.typesafe.akka" %% "akka-http-experimental" % Version.akkaHttp
+  val json4s = "org.json4s" %% "json4s-native" % Version.json4s
+
 
 }
 
@@ -61,12 +66,14 @@ object Dependencies {
     jodaTime,
     akkaActor,
     akkaPersistence,
+    akkaHttp,
     mongoPersitence,
     scalazCore,
     pi4jClientRemote,
     pi4jDevice,
     scalaLogging,
     logBack,
+    json4s,
     mockito       	% "test",
     akkaTestkit     % "test",
     scalaTest     	% "test"
