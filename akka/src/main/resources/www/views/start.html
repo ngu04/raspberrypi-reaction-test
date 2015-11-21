@@ -1,13 +1,33 @@
-<div class="col-md-6">
-    <div ng-include="'views/heading.html'"></div>
-    <p>
+<div class="container">
+    <div class="col-md-6">
+        <div ng-include="'views/heading.html'"></div>
+        <p>
+        </p>
+    </div>
+    <div class="col-md-6">
+
+        <p class="lead" ng-hide="gameInProgress">Please fill this form:</p>
+
+        <p class="lead" ng-show="gameInProgress">Game is in progress...</p>
+
         <form ng-submit="register()">
-            <div class="input-group">
-                <input type="email" class="form-control" placeholder="Email address" ng-disabled="gameInProgress" ng-model="email" required>
-                <span class="input-group-btn">
-                    <button class="btn btn-default" type="submit" ng-disabled="gameInProgress">Play</button>
-                </span>
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="Name"
+                       ng-disabled="gameInProgress"
+                       ng-model="user.name"
+                       required>
             </div>
+            <div class="form-group">
+                <input type="email" class="form-control" placeholder="Email address" ng-disabled="gameInProgress"
+                       ng-model="user.email" required>
+            </div>
+            <div class="form-group">
+                <textarea class="form-control" rows="3" ng-model="user.comments" ng-disabled="gameInProgress"
+                          placeholder="Any comments..."></textarea>
+            </div>
+            <button class="btn btn-info btn-block" type="submit" ng-disabled="gameInProgress">
+                You may contact me, let's play!</button>
         </form>
-    </p>
+        </p>
+    </div>
 </div>

@@ -33,7 +33,7 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   def updateState(evt: ReactionTestResultArrivedEvent): Unit = {
     reactionTestState = reactionTestState.update(evt.testResult)
     saveSnapshot(reactionTestState)
-    log.info(s"Result for ${evt.testResult.user.userName} has been persested!")
+    log.info(s"Result for ${evt.testResult.user.name} has been persisted!")
     log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
     log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
 
@@ -88,7 +88,7 @@ case class TestResult(user: User, result: Result) extends Ordered[TestResult] {
   def compare(that: TestResult): Int = result compare that.result
 }
 
-case class User(userName: String, email: String, desc: String, phone: Option[String] = None)
+case class User(name: String, email: String, comments: Option[String])
 
 case class Result(id: String = UUID.randomUUID().toString, startTime: DateTime = DateTime.now(), iterations: Int, avg: Int, std: Double) extends Ordered[Result] {
   def compare(that: Result): Int =

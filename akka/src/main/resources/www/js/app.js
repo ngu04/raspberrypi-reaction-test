@@ -13,27 +13,24 @@ webClient.controller('Controller', function ($scope) {
                 case "registrationClosed":
                     $scope.gameInProgress = true;
                     break;
+                case "leaderBoard":
+                    $scope.leaderBoard = data.leaderBoard;
+                    break;
             }
         });
     };
 
     $scope.gameInProgress = false;
 
-    $scope.results = [];
+    $scope.leaderBoard = [];
 
     $scope.register = function(){
         $scope.formDisabled = true;
         var message = angular.toJson({
             type: 'user',
-            user: {
-                userName: "userName",
-                email: $scope.email,
-                desc: "desc",
-                phone: null
-            }
+            user: $scope.user
         });
-        $scope.email = '';
-
+        $scope.user = {};
         webSocket.send(message);
     };
 });
