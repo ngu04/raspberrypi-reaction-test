@@ -1,12 +1,10 @@
-package org.kaloz.gpio.dfgdfg
+package org.kaloz.gpio.web
 
 import akka.http.scaladsl.model.ws.TextMessage
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import org.kaloz.gpio.User
-
-import scala.util.Random
+import org.kaloz.gpio.TestResult
 
 object WebSocketMessageFactory {
 
@@ -14,13 +12,12 @@ object WebSocketMessageFactory {
 
   def registrationOpened = asTextMessage(("type" -> "registrationOpened"))
   def registrationClosed = asTextMessage(("type" -> "registrationClosed"))
-  def leaderBoard = {
-    val leaderBoard = List(User("name", "email", Some("sdfsdf")), User("name", "email", Some("sdfsdf")))
+  def leaderBoard(leaderBoard: List[TestResult]) = {
     asTextMessage(("type" -> "leaderBoard") ~ ("leaderBoard" -> leaderBoard.map(asJValue)))
   }
 
-  private def asJValue(user: User) = {
-    ("name" -> user.name) ~ ("score" -> (new Random()).nextInt())
+  private def asJValue(result: TestResult) = {
+    ("name" -> result.user.name) ~ ("score" -> result.result.avg)
   }
   private def asTextMessage(json: JObject) = TextMessage(compact(render(json)))
 }

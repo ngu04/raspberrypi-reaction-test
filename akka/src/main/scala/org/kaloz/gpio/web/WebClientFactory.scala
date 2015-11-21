@@ -1,4 +1,4 @@
-package org.kaloz.gpio.dfgdfg
+package org.kaloz.gpio.web
 
 import akka.actor._
 import akka.http.scaladsl.Http
@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import com.typesafe.scalalogging.StrictLogging
-import org.kaloz.gpio.dfgdfg.WebSocketActor.Initialize
+import org.kaloz.gpio.web.WebSocketActor.Initialize
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

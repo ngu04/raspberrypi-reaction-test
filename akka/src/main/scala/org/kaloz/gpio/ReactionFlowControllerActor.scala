@@ -9,7 +9,7 @@ import org.kaloz.gpio.SingleLedReactionTestActor._
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
-import org.kaloz.gpio.dfgdfg.WebSocketActor.RegistrationOpened
+import org.kaloz.gpio.web.WebSocketActor.{RegistrationClosed, RegistrationOpened}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -42,6 +42,7 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
     case Event(user: User, state: FlowStateData) =>
       log.info(s"User data arrived for $user")
       startSingleLedTest()
+      context.system.eventStream.publish(RegistrationClosed)
       goto(WaitingSingleLedTestFinish) using state.withUser(user)
   }
 

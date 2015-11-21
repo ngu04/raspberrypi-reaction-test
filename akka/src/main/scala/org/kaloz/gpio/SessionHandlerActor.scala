@@ -11,8 +11,11 @@ import org.kaloz.gpio.SessionHandlerActor.{ReactionTestResultArrivedEvent, SaveR
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins.{BCM_24, BCM_25}
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.web.WebSocketActor.RegistrationOpened
 
 class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) extends PersistentActor with ActorLogging {
+
+  context.system.eventStream.subscribe(self, ReactionTestStateRequest.getClass)
 
   override val persistenceId: String = "sessionHandlerActor"
 
@@ -43,9 +46,13 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   override def receiveCommand: Receive = LoggingReceive {
     case SaveReactionTestResultCmd(testResult) =>
       persist(ReactionTestResultArrivedEvent(testResult))(updateState)
+      context.system.eventStream.publish(reactionTestState)
+      context.system.eventStream.publish(RegistrationOpened)
     case TestAbortedEvent(userOption) =>
       userOption.fold(log.info(s"Test is aborted without user data..")) { user => log.info(s"Test is aborted for user $user") }
       initializeDefaultButtons()
+    case ReactionTestStateRequest =>
+      context.system.eventStream.publish(reactionTestState)
   }
 
   private def initializeDefaultButtons() = {
@@ -74,6 +81,8 @@ object SessionHandlerActor {
 
 }
 
+case object ReactionTestStateRequest
+
 case class ReactionTestState(testResults: List[TestResult] = List.empty) {
   def update(testResult: TestResult) = copy(testResult :: testResults)
 
@@ -84,9 +93,7 @@ case class ReactionTestState(testResults: List[TestResult] = List.empty) {
   def positionOf(user: User) = testResults.groupBy(_.user).values.map(_.sorted.head).toList.sorted.zipWithIndex.filter(item => item._1.user == user).head.swap
 }
 
-case class TestResult(user: User, result: Result) extends Ordered[TestResult] {
-  def compare(that: TestResult): Int = result compare that.result
-}
+case class TestResult(user: User, result: Result)
 
 case class User(name: String, email: String, comments: Option[String])
 
