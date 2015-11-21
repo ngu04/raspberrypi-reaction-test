@@ -14,7 +14,7 @@ import org.kaloz.gpio.common.PinController
 
 class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) extends PersistentActor with ActorLogging {
 
-  override val persistenceId: String = "sessionHandlerActor"
+  override val persistenceId: String = SessionHandlerActor.sessionHandlerActorPersistenceId
 
   val startButton = pinController.digitalInputPin(BCM_25("Start"))
   val resultButton = pinController.digitalInputPin(BCM_24("Result"))
@@ -33,9 +33,16 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   def updateState(evt: ReactionTestResultArrivedEvent): Unit = {
     reactionTestState = reactionTestState.update(evt.testResult)
     saveSnapshot(reactionTestState)
-    log.info(s"Result for ${evt.testResult.user.userName} has been persested!")
+    log.info(s"Result for ${evt.testResult.user.userName} has been persisted!")
     log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
     log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
+
+    //    implicit val mat = ActorMaterializer()
+    //    val readJournal = PersistenceQuery(system).readJournalFor[ScalaDslMongoReadJournal](MongoReadJournal.Identifier)
+    //    val source = readJournal.currentEventsByPersistenceId(SessionHandlerActor.sessionHandlerActorPersistenceId, 0, Long.MaxValue)
+    ////    val source = readJournal.currentPersistenceIds()
+    ////    val source = readJournal.allEvents()
+    //    source.runForeach { event => log.info("-------> Event: " + event) }
 
     initializeDefaultButtons()
   }
@@ -64,6 +71,9 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
 }
 
 object SessionHandlerActor {
+
+  val sessionHandlerActorPersistenceId: String = "sessionHandlerActorPersistenceId"
+
   def props(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) = Props(classOf[SessionHandlerActor], pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold, numberOfWinners)
 
   case class SaveReactionTestResultCmd(testResult: TestResult)
