@@ -10,9 +10,9 @@ trait GpioAppDI extends GpioAppConfig {
 
   val pinController = new PinController()
 
-  val singleLedReactionTestActor = system.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTestActor")
-  val reactionSessionControllerActor = system.actorOf(ReactionSessionControllerActor.props(pinController, singleLedReactionTestActor, reactionCorrectionFactor, reactionThreshold), "reactionSessionControllerActor")
-  system.actorOf(ReactionTestControllerActor.props(pinController, reactionSessionControllerActor, numberOfWinners), "reactionTestControllerActor")
+  val singleLedReactionTest = system.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTest")
+  val reactionTestSessionController = system.actorOf(ReactionTestSessionControllerActor.props(pinController, singleLedReactionTest, reactionCorrectionFactor, reactionThreshold), "reactionSessionController")
+  val reactionTestController = system.actorOf(ReactionTestControllerActor.props(pinController, reactionTestSessionController), "reactionTestController")
 
-  val binding = WebClientFactory.bind()
+  val binding = WebClientFactory.bind(reactionTestController, reactionTestSessionController)
 }

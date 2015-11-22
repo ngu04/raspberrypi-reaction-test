@@ -10,14 +10,19 @@ object WebSocketMessageFactory {
 
   implicit val jsonFormat = org.json4s.DefaultFormats
 
-  def registrationOpened = asTextMessage(("type" -> "registrationOpened"))
-  def registrationClosed = asTextMessage(("type" -> "registrationClosed"))
-  def leaderBoard(leaderBoard: List[TestResult]) = {
+  def waitingStartSignalMessage = asTextMessage(("type" -> "waitingStartSignal"))
+
+  def openUserRegistrationMessage = asTextMessage(("type" -> "openUserRegistration"))
+
+  def gameInProgressMessage = asTextMessage(("type" -> "gameInProgress"))
+
+  def leaderBoardStateMessage(leaderBoard: List[TestResult]) = {
     asTextMessage(("type" -> "leaderBoard") ~ ("leaderBoard" -> leaderBoard.map(asJValue)))
   }
 
   private def asJValue(result: TestResult) = {
-    ("name" -> result.user.name) ~ ("score" -> result.result.avg)
+    ("name" -> result.user.name) ~ ("score" -> result.result.score)
   }
+
   private def asTextMessage(json: JObject) = TextMessage(compact(render(json)))
 }

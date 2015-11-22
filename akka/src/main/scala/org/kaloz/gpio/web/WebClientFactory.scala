@@ -13,15 +13,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object WebClientFactory extends StrictLogging {
 
-  def bind()(implicit system: ActorSystem) = {
+  def bind(reactionTestController: ActorRef, reactionTestSessionController: ActorRef)(implicit system: ActorSystem) = {
     implicit val flowMaterializer = ActorMaterializer()
-    Http().bindAndHandle(route, "0.0.0.0", 8080)
+    Http().bindAndHandle(route(reactionTestController, reactionTestSessionController), "0.0.0.0", 8080)
   }
 
-  private def route(implicit system: ActorSystem, materializer: ActorMaterializer) = {
+  private def route(reactionTestController: ActorRef, reactionTestSessionController: ActorRef)(implicit system: ActorSystem, materializer: ActorMaterializer) = {
     path("ws") {
       get {
-        handleWebsocketMessages(webSocketActorFlow)
+        handleWebsocketMessages(webSocketActorFlow(reactionTestController, reactionTestSessionController))
       }
     } ~ pathEndOrSingleSlash {
       getFromResource("www/index.html")
@@ -30,8 +30,8 @@ object WebClientFactory extends StrictLogging {
     }
   }
 
-  private def webSocketActorFlow(implicit system: ActorSystem, materializer: ActorMaterializer): Flow[Message, Message, _] = {
-    val webSocketActor = system.actorOf(Props[WebSocketActor])
+  private def webSocketActorFlow(reactionTestController: ActorRef, reactionTestSessionController: ActorRef)(implicit system: ActorSystem, materializer: ActorMaterializer): Flow[Message, Message, _] = {
+    val webSocketActor = system.actorOf(WebSocketActor.props(reactionTestController, reactionTestSessionController))
 
     val in = Flow[Message].to(Sink.actorRef(webSocketActor, PoisonPill))
     val out = Source.actorRef(10, OverflowStrategy.fail).mapMaterializedValue(sink => webSocketActor ! Initialize(sink))

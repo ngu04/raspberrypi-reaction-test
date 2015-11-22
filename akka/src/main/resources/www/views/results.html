@@ -3,11 +3,14 @@
     <div class="col-md-6">
         <div ng-include="'views/heading.html'"></div>
 
-        <div ng-show="gameInProgress">
-            <span>Game in progress</span>
+        <div ng-show="waitingStartSignal">
+            <span>Waiting Raspberry Pi Start button to be pushed...</span>
         </div>
-        <div ng-hide="gameInProgress">
-            <span>Waiting for the new player...</span>
+        <div ng-hide="disableRegistration();">
+            <span>New use is registering...</span>
+        </div>
+        <div ng-show="gameInProgress">
+            <span>Game is in progress...</span>
         </div>
     </div>
 
@@ -23,7 +26,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="result in leaderBoard | orderBy: 'score'">
+            <tr ng-repeat="result in leaderBoard | orderBy:'score'">
                 <td>{{ $index + 1 }}</td>
                 <td class="truncated">{{ result.name }}</td>
                 <td>{{ result.score }}</td>

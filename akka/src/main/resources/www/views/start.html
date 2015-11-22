@@ -6,26 +6,29 @@
     </div>
     <div class="col-md-6">
 
-        <p class="lead" ng-hide="gameInProgress">Please fill this form:</p>
+        <p class="lead" ng-show="waitingStartSignal">Waiting Raspberry Pi Start button to be pushed...</p>
+
+        <p class="lead" ng-hide="disableRegistration();">Please fill the form:</p>
 
         <p class="lead" ng-show="gameInProgress">Game is in progress...</p>
 
         <form ng-submit="register()">
             <div class="form-group">
                 <input type="text" class="form-control" placeholder="Name"
-                       ng-disabled="gameInProgress"
+                       ng-disabled="disableRegistration();"
                        ng-model="user.name"
                        required>
             </div>
             <div class="form-group">
-                <input type="email" class="form-control" placeholder="Email address" ng-disabled="gameInProgress"
+                <input type="email" class="form-control" placeholder="Email address"
+                       ng-disabled="disableRegistration();"
                        ng-model="user.email" required>
             </div>
             <div class="form-group">
-                <textarea class="form-control" rows="3" ng-model="user.comments" ng-disabled="gameInProgress"
+                <textarea class="form-control" rows="3" ng-model="user.comments" ng-disabled="disableRegistration();"
                           placeholder="Any comments..."></textarea>
             </div>
-            <button class="btn btn-info btn-block" type="submit" ng-disabled="gameInProgress">
+            <button class="btn btn-info btn-block" type="submit" ng-disabled="disableRegistration();">
                 You may contact me, let's play!</button>
         </form>
         </p>
