@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object WebClientFactory extends StrictLogging {
 
-  def bind(implicit system: ActorSystem) = {
+  def bind()(implicit system: ActorSystem) = {
     implicit val flowMaterializer = ActorMaterializer()
     Http().bindAndHandle(route, "0.0.0.0", 8080)
   }

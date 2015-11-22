@@ -2,26 +2,25 @@ package org.kaloz.gpio
 
 import java.util.UUID
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import akka.persistence.{PersistentActor, SnapshotOffer}
 import org.joda.time.DateTime
-import org.kaloz.gpio.ReactionFlowControllerActor.StartTestFlow
-import org.kaloz.gpio.SessionHandlerActor.{ReactionTestResultArrivedEvent, SaveReactionTestResultCmd, TestAbortedEvent}
+import org.kaloz.gpio.ReactionSessionControllerActor.StartTestSession
+import org.kaloz.gpio.ReactionTestControllerActor.{ReactionTestResultArrivedEvent, SaveReactionTestResultCmd, TestAbortedEvent, TestEvent}
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins.{BCM_24, BCM_25}
 import org.kaloz.gpio.common.PinController
 import org.kaloz.gpio.web.WebSocketActor.RegistrationOpened
 
-class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) extends PersistentActor with ActorLogging {
+class ReactionTestControllerActor(pinController: PinController, reactionSessionControllerActor: ActorRef, numberOfWinners: Int) extends PersistentActor with ActorLogging {
 
   context.system.eventStream.subscribe(self, ReactionTestStateRequest.getClass)
 
-  override val persistenceId: String = "sessionHandlerActor"
+  override val persistenceId: String = "reactionTestControllerPersistenceId"
 
   val startButton = pinController.digitalInputPin(BCM_25("Start"))
   val resultButton = pinController.digitalInputPin(BCM_24("Result"))
-  val reactionFlowControllerActor = context.actorOf(ReactionFlowControllerActor.props(pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold), "reactionFlowControllerActor")
 
   var reactionTestState = ReactionTestState()
 
@@ -33,13 +32,15 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
       log.info(s"Snapshot has been loaded with ${reactionTestState.testResults.size} test results!")
   }
 
-  def updateState(evt: ReactionTestResultArrivedEvent): Unit = {
-    reactionTestState = reactionTestState.update(evt.testResult)
-    saveSnapshot(reactionTestState)
-    log.info(s"Result for ${evt.testResult.user.name} has been persisted!")
-    log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
-    log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
-
+  def updateState(evt: TestEvent): Unit = {
+    evt match {
+      case evt: ReactionTestResultArrivedEvent =>
+        reactionTestState = reactionTestState.update(evt.testResult)
+        saveSnapshot(reactionTestState)
+        log.info(s"Result for ${evt.testResult.user.name} has been persisted!")
+        log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.avg} ms avg response time - ${evt.testResult.result.std} std")
+        log.info(s"Position with the best of the user is ${reactionTestState.positionOf(evt.testResult.user)}")
+    }
     initializeDefaultButtons()
   }
 
@@ -59,7 +60,7 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
     startButton.addStateChangeFallEventListener { event =>
       startButton.removeAllListeners()
       resultButton.removeAllListeners()
-      reactionFlowControllerActor ! StartTestFlow
+      reactionSessionControllerActor ! StartTestSession(self)
     }
     resultButton.addStateChangeFallEventListener { event =>
       log.info(s"Results!! ${reactionTestState.take(numberOfWinners)}")
@@ -69,14 +70,16 @@ class SessionHandlerActor(pinController: PinController, reactionLedPulseLength: 
   }
 }
 
-object SessionHandlerActor {
-  def props(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int, numberOfWinners: Int) = Props(classOf[SessionHandlerActor], pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold, numberOfWinners)
+object ReactionTestControllerActor {
+  def props(pinController: PinController, reactionSessionControllerActor: ActorRef, numberOfWinners: Int) = Props(classOf[ReactionTestControllerActor], pinController, reactionSessionControllerActor, numberOfWinners)
 
   case class SaveReactionTestResultCmd(testResult: TestResult)
 
-  case class TestAbortedEvent(user: Option[User])
+  trait TestEvent
 
-  case class ReactionTestResultArrivedEvent(testResult: TestResult)
+  case class TestAbortedEvent(user: Option[User]) extends TestEvent
+
+  case class ReactionTestResultArrivedEvent(testResult: TestResult) extends TestEvent
 
 }
 

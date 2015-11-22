@@ -3,8 +3,8 @@ package org.kaloz.gpio
 import akka.actor._
 import com.pi4j.io.gpio.{GpioPinDigitalInput, GpioPinDigitalOutput, PinState}
 import org.joda.time.DateTime
-import org.kaloz.gpio.ReactionFlowControllerActor._
-import org.kaloz.gpio.SessionHandlerActor.{SaveReactionTestResultCmd, TestAbortedEvent}
+import org.kaloz.gpio.ReactionSessionControllerActor._
+import org.kaloz.gpio.ReactionTestControllerActor.{SaveReactionTestResultCmd, TestAbortedEvent}
 import org.kaloz.gpio.SingleLedReactionTestActor._
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
@@ -17,14 +17,13 @@ import scala.concurrent.duration._
 import scala.util.{Random, Try}
 import scalaz.Scalaz._
 
-class ReactionFlowControllerActor(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) extends FSM[ReactionFlowState, FlowStateData] with ActorLogging {
+class ReactionSessionControllerActor(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionCorrectionFactor: Int, reactionThreshold: Int) extends FSM[ReactionFlowState, FlowStateData] with ActorLogging {
 
   private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed"), BCM_20("BlueLed")).map(pinController.digitalOutputPin(_))
   private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton"), BCM_24("BlueLedButton")).map(pinController.digitalInputPin(_))
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
   reactionButtons.foreach(_.setDebounce(2000))
 
-  private val singleLedReactionTestActor = context.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTestActor")
   private val abortButton = pinController.digitalInputPin(BCM_25("AbortTest"))
 
   startWith(WaitingStartTestFlow, FlowStateData())
@@ -32,10 +31,9 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   context.system.eventStream.subscribe(self, classOf[User])
 
   when(WaitingStartTestFlow) {
-    case Event(StartTestFlow, _) =>
-      log.info("Reaction test session started! Waiting for user data...")
+    case Event(StartTestSession(parent), state: FlowStateData) =>
       initFlow()
-      goto(WaitingUserRegistration)
+      goto(WaitingUserRegistration) using state.withParent(parent)
   }
 
   when(WaitingUserRegistration) {
@@ -47,7 +45,7 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   }
 
   when(WaitingSingleLedTestFinish) {
-    case Event(SingleLedReactionTestResult(reactionTime), state@FlowStateData(Some(user), _)) =>
+    case Event(SingleLedReactionTestResult(reactionTime), state@FlowStateData(Some(user), _, Some(parent))) =>
       val newState = state.addReactionTime(reactionTime)
       val reactionPoints = newState.reactionTimes.map(_ / reactionCorrectionFactor).sum
       log.info(s"Current state: reactionTime -> $reactionTime ms, reactionPoints -> $reactionPoints, reactionThreshold -> $reactionThreshold")
@@ -56,7 +54,7 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
         startSingleLedTest()
         stay() using newState
       } else {
-        context.parent ! SaveReactionTestResultCmd(TestResult(user, Result(iterations = newState.numberOfTests, avg = newState.averageReactionTime, std = newState.standardDeviation)))
+        parent ! SaveReactionTestResultCmd(TestResult(user, Result(iterations = newState.numberOfTests, avg = newState.averageReactionTime, std = newState.standardDeviation)))
         goto(WaitingStartTestFlow) using FlowStateData()
       }
   }
@@ -66,8 +64,8 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   }
 
   whenUnhandled {
-    case Event(AbortTestFlow, FlowStateData(userOption, _)) =>
-      context.parent ! TestAbortedEvent(userOption)
+    case Event(AbortTestFlow, FlowStateData(userOption, _, Some(parent))) =>
+      parent ! TestAbortedEvent(userOption)
       singleLedReactionTestActor ! TerminateSingleLedReactionTest
       goto(WaitingStartTestFlow) using FlowStateData()
   }
@@ -76,11 +74,12 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
 
   def startSingleLedTest(): Unit = {
     val reactionTestType = Random.nextInt(reactionLeds.size)
-    singleLedReactionTestActor ! StartSingleLedReactionTest(reactionLeds(reactionTestType), reactionButtons(reactionTestType))
+    singleLedReactionTestActor ! StartSingleLedReactionTest(reactionLeds(reactionTestType), reactionButtons(reactionTestType), self)
   }
 
   def initFlow() = {
     progressIndicatorLed.setPwm(0)
+    log.info("Reaction test session started! Waiting for user data...")
     context.system.eventStream.publish(RegistrationOpened)
     abortButton.addStateChangeFallEventListener { event =>
       abortButton.removeAllListeners()
@@ -89,8 +88,8 @@ class ReactionFlowControllerActor(pinController: PinController, reactionLedPulse
   }
 }
 
-object ReactionFlowControllerActor {
-  def props(pinController: PinController, reactionLedPulseLength: Int, reactionCorrectionFactor: Int, reactionThreshold: Int) = Props(classOf[ReactionFlowControllerActor], pinController, reactionLedPulseLength, reactionCorrectionFactor, reactionThreshold)
+object ReactionSessionControllerActor {
+  def props(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionCorrectionFactor: Int, reactionThreshold: Int) = Props(classOf[ReactionSessionControllerActor], pinController, singleLedReactionTestActor, reactionCorrectionFactor, reactionThreshold)
 
   sealed trait ReactionFlowState
 
@@ -102,13 +101,15 @@ object ReactionFlowControllerActor {
 
   sealed trait ReactionFlowMessage
 
-  case object StartTestFlow extends ReactionFlowMessage
+  case class StartTestSession(parent: ActorRef) extends ReactionFlowMessage
 
   case object AbortTestFlow extends ReactionFlowMessage
 
-  case class FlowStateData(user: Option[User] = None, reactionTimes: List[Int] = List.empty) {
+  case class FlowStateData(user: Option[User] = None, reactionTimes: List[Int] = List.empty, parent: Option[ActorRef] = None) {
 
     def withUser(user: User) = copy(user = user.some)
+
+    def withParent(parent: ActorRef) = copy(parent = parent.some)
 
     def addReactionTime(reactionTime: Int) = copy(reactionTimes = reactionTime :: reactionTimes)
 
@@ -129,27 +130,27 @@ class SingleLedReactionTestActor(reactionLedPulseLength: Int) extends FSM[Single
   startWith(WaitingStartSignal, TestStateData())
 
   when(WaitingStartSignal) {
-    case Event(StartSingleLedReactionTest(ledPin, button), _) =>
+    case Event(StartSingleLedReactionTest(ledPin, button, parent), _) =>
       val cancellable = context.system.scheduler.scheduleOnce((WAIT_OFFSET_IN_MILLIS + Random.nextInt(WAIT_OFFSET_RANDOM_IN_MILLIS)) millis, self, SwitchOnLed)
-      goto(WaitingRandomTimeExpiry) using TestStateData(ledPin.some, button.some, cancellable.some)
+      goto(WaitingRandomTimeExpiry) using TestStateData(ledPin.some, button.some, cancellable.some, parent.some)
   }
 
   when(WaitingRandomTimeExpiry) {
-    case Event(SwitchOnLed, state@TestStateData(Some(ledPin), Some(button), _, None)) =>
+    case Event(SwitchOnLed, state@TestStateData(Some(ledPin), Some(button), _, _, None)) =>
       Future.sequence(Seq(pulseTestLedAndWait(ledPin), waitForUserReaction(button)))
       goto(WaitingUserReaction) using state.withStartTime()
   }
 
   when(WaitingUserReaction) {
-    case Event(SwitchOffLed, TestStateData(Some(ledPin), Some(button), _, Some(startTime))) =>
+    case Event(SwitchOffLed, TestStateData(Some(ledPin), Some(button), _, Some(parent), Some(startTime))) =>
       button.removeAllListeners()
       ledPin.setState(PinState.LOW)
-      context.parent ! SingleLedReactionTestResult((DateTime.now.getMillis - startTime).toInt)
+      parent ! SingleLedReactionTestResult((DateTime.now.getMillis - startTime).toInt)
       goto(WaitingStartSignal) using TestStateData()
   }
 
   whenUnhandled {
-    case Event(TerminateSingleLedReactionTest, TestStateData(_, _, cancellable, _)) =>
+    case Event(TerminateSingleLedReactionTest, TestStateData(_, _, cancellable, _, _)) =>
       cancellable.foreach(_.cancel())
       goto(WaitingStartSignal) using TestStateData()
   }
@@ -180,7 +181,7 @@ object SingleLedReactionTestActor {
 
   sealed trait SingleLedReactionTestMessage
 
-  case class StartSingleLedReactionTest(ledPin: GpioPinDigitalOutput, button: GpioPinDigitalInput) extends SingleLedReactionTestMessage
+  case class StartSingleLedReactionTest(ledPin: GpioPinDigitalOutput, button: GpioPinDigitalInput, parent: ActorRef) extends SingleLedReactionTestMessage
 
   case object TerminateSingleLedReactionTest extends SingleLedReactionTestMessage
 
@@ -190,7 +191,7 @@ object SingleLedReactionTestActor {
 
   case class SingleLedReactionTestResult(reactionTime: Int) extends SingleLedReactionTestMessage
 
-  case class TestStateData(ledPin: Option[GpioPinDigitalOutput] = None, button: Option[GpioPinDigitalInput] = None, cancellable: Option[Cancellable] = None, startTime: Option[Long] = None) {
+  case class TestStateData(ledPin: Option[GpioPinDigitalOutput] = None, button: Option[GpioPinDigitalInput] = None, cancellable: Option[Cancellable] = None, parent: Option[ActorRef] = None, startTime: Option[Long] = None) {
     def withStartTime() = copy(cancellable = None, startTime = DateTime.now.getMillis.some)
   }
 
