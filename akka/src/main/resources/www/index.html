@@ -5,21 +5,23 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular-route.min.js"></script>
 
+    <link rel="stylesheet" href="css/main.css">
     <script src="js/app.js"></script>
 
-    <style>
-        td.truncated {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-    </style>
 </head>
-<body>
+
+<body ng-controller="Controller">
+
+<div class="container-fluid" ng-hide="connected">
+    <div class="overlay"></div>
+    <div class="col-xs-12 alert alert-warning overlay-message">
+        <h4>Backend is stopped...</h4>
+    </div>
+</div>
 
 <div class="container" style="margin-top: 20px" ng-view>
 </div>
