@@ -31,7 +31,7 @@ object WebClientFactory extends StrictLogging {
   }
 
   private def webSocketActorFlow(reactionTestController: ActorRef, reactionTestSessionController: ActorRef)(implicit system: ActorSystem, materializer: ActorMaterializer): Flow[Message, Message, _] = {
-    val webSocketActor = system.actorOf(WebSocketActor.props(reactionTestController, reactionTestSessionController))
+    val webSocketActor = system.actorOf(WebSocketActor.props(reactionTestController, reactionTestSessionController), "webSocketActor-" + System.currentTimeMillis())
 
     val in = Flow[Message].to(Sink.actorRef(webSocketActor, PoisonPill))
     val out = Source.actorRef(10, OverflowStrategy.fail).mapMaterializedValue(sink => webSocketActor ! Initialize(sink))

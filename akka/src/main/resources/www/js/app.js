@@ -2,6 +2,11 @@ var webClient = angular.module('webClient', ['ngRoute']);
 
 webClient.controller('Controller', function ($scope, $log) {
 
+    $scope.user = {};
+    $scope.leaderBoard = [];
+    $scope.waitingStartSignal = false;
+    $scope.gameInProgress = false;
+
     var webSocket = new ReconnectingWebSocket('ws://localhost:8080/ws');
     webSocket.maxReconnectInterval = 3000;
     webSocket.onmessage = function(message) {
@@ -27,6 +32,7 @@ webClient.controller('Controller', function ($scope, $log) {
             }
         });
     };
+
     webSocket.onopen = function() {
         $scope.$apply(function() {
             $scope.connected = true;
@@ -38,18 +44,13 @@ webClient.controller('Controller', function ($scope, $log) {
         });
     };
 
-    $scope.waitingStartSignal = false;
-
-    $scope.gameInProgress = false;
-
     $scope.disableRegistration = function () {
         return $scope.waitingStartSignal || $scope.gameInProgress;
     };
 
-    $scope.leaderBoard = [];
-
     $scope.register = function(){
         $scope.formDisabled = true;
+        $log.info($scope.user)
         var message = angular.toJson({
             type: 'user',
             user: $scope.user
