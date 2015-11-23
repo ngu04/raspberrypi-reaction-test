@@ -7,43 +7,57 @@ webClient.controller('Controller', function ($scope, $log) {
     $scope.waitingStartSignal = false;
     $scope.gameInProgress = false;
 
-    var webSocket = new ReconnectingWebSocket('ws://localhost:8080/ws');
-    webSocket.maxReconnectInterval = 3000;
-    webSocket.onmessage = function(message) {
-        $scope.$apply(function() {
-            var data = JSON.parse(message.data);
-            $log.info(data)
-            switch(data.type) {
-                case "waitingStartSignal":
-                    $scope.waitingStartSignal = true;
-                    $scope.gameInProgress = false;
-                    break;
-                case "openUserRegistration":
-                    $scope.waitingStartSignal = false;
-                    $scope.gameInProgress = false;
-                    break;
-                case "gameInProgress":
-                    $scope.waitingStartSignal = false;
-                    $scope.gameInProgress = true;
-                    break;
-                case "leaderBoard":
-                    $scope.leaderBoard = data.leaderBoard;
-                    break;
-            }
-        });
+    function createWebSocket(webSocketUrl) {
+        var webSocket = new ReconnectingWebSocket(webSocketUrl);
+        webSocket.maxReconnectInterval = 3000;
+        webSocket.onmessage = function(message) {
+            $scope.$apply(function() {
+                var data = JSON.parse(message.data);
+                $log.info(data)
+                switch(data.type) {
+                    case "waitingStartSignal":
+                        $scope.waitingStartSignal = true;
+                        $scope.gameInProgress = false;
+                        break;
+                    case "openUserRegistration":
+                        $scope.waitingStartSignal = false;
+                        $scope.gameInProgress = false;
+                        break;
+                    case "gameInProgress":
+                        $scope.waitingStartSignal = false;
+                        $scope.gameInProgress = true;
+                        break;
+                    case "leaderBoard":
+                        $scope.leaderBoard = data.leaderBoard;
+                        break;
+                }
+            });
+        };
+
+        webSocket.onopen = function() {
+            $scope.$apply(function() {
+                $scope.connected = true;
+                $scope.user = {};
+            });
+        };
+        webSocket.onclose = function() {
+            $scope.$apply(function() {
+                $scope.connected = false;
+            });
+        };
+
+        return webSocket;
+    }
+
+    $scope.webSocketUrl = 'ws://localhost:8080/ws';
+
+    var webSocket = createWebSocket($scope.webSocketUrl);
+
+    $scope.setWebSocketUrl = function(webSocketUrl) {
+        webSocket.close();
+        webSocket = createWebSocket(webSocketUrl);
     };
 
-    webSocket.onopen = function() {
-        $scope.$apply(function() {
-            $scope.connected = true;
-            $scope.user = {};
-        });
-    };
-    webSocket.onclose = function() {
-        $scope.$apply(function() {
-            $scope.connected = false;
-        });
-    };
 
     $scope.disableRegistration = function () {
         return $scope.waitingStartSignal || $scope.gameInProgress;

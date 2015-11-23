@@ -1,3 +1,22 @@
+<div class="row" ng-init="settings = false" ng-hide="settings">
+    <button type="button" class="btn btn-default" ng-click="settings = !settings">
+        <span class="glyphicon glyphicon-cog"></span>
+    </button>
+</div>
+
+<div class="row" ng-show="settings">
+    <div class="input-group">
+        <span class="input-group-addon" ng-click="settings = !settings">
+            <span class="glyphicon glyphicon-cog"></span>
+        </span>
+
+        <input type="text" class="form-control" ng-model="webSocketUrl">
+        <span class="input-group-btn">
+            <button class="btn btn-default" type="button" ng-click="setWebSocketUrl(webSocketUrl)">Set</button>
+        </span>
+    </div>
+</div>
+
 <p>
     <img src="http://www.techweekeurope.co.uk/wp-content/uploads/2015/02/Sky-logo-600x374.png" width="75%">
 </p>
