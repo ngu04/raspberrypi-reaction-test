@@ -36,6 +36,7 @@ webClient.controller('Controller', function ($scope, $log) {
     webSocket.onopen = function() {
         $scope.$apply(function() {
             $scope.connected = true;
+            $scope.user = {};
         });
     };
     webSocket.onclose = function() {
