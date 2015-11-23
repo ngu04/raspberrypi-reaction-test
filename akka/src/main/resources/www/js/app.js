@@ -2,11 +2,6 @@ var webClient = angular.module('webClient', ['ngRoute']);
 
 webClient.controller('Controller', function ($scope, $log) {
 
-    $scope.user = {};
-    $scope.leaderBoard = [];
-    $scope.waitingStartSignal = false;
-    $scope.gameInProgress = false;
-
     function createWebSocket(webSocketUrl) {
         var webSocket = new ReconnectingWebSocket(webSocketUrl);
         webSocket.maxReconnectInterval = 3000;
@@ -28,7 +23,7 @@ webClient.controller('Controller', function ($scope, $log) {
                         $scope.gameInProgress = true;
                         break;
                     case "leaderBoard":
-                        $scope.leaderBoard = data.leaderBoard;
+                        $scope.leaderBoard = groupByName(data.leaderBoard);
                         break;
                 }
             });
@@ -48,6 +43,34 @@ webClient.controller('Controller', function ($scope, $log) {
 
         return webSocket;
     }
+
+    function groupByName(results) {
+        var grouped = {};
+        for(var i = 0; i < results.length; i++) {
+            var name = results[i].name;
+            var score = results[i].score;
+            if(grouped[name]) {
+                grouped[name].bestScore = Math.max(grouped[name].bestScore, score);
+                grouped[name].results.push(results[i]);
+            } else {
+                grouped[name] = {
+                    name: name,
+                    bestScore: score,
+                    results: [ results[i] ]
+                };
+            }
+        }
+        var ret = [];
+        for (var group in grouped) {
+            ret.push(grouped[group]);
+        }
+        return ret;
+    }
+
+    $scope.user = {};
+    $scope.leaderBoard = [];
+    $scope.waitingStartSignal = false;
+    $scope.gameInProgress = false;
 
     $scope.webSocketUrl = 'ws://localhost:8080/ws';
 
@@ -76,14 +99,14 @@ webClient.controller('Controller', function ($scope, $log) {
 });
 
 webClient.config(function ($routeProvider) {
-        $routeProvider
-            .when('/start', {
-                templateUrl: 'views/start.html'
-            })
-            .when('/results', {
-                templateUrl: 'views/results.html'
-            })
-            .otherwise({
-                redirectTo: '/start'
-            });
-    });
+    $routeProvider
+        .when('/start', {
+            templateUrl: 'views/start.html'
+        })
+        .when('/results', {
+            templateUrl: 'views/results.html'
+        })
+        .otherwise({
+            redirectTo: '/start'
+        });
+});
