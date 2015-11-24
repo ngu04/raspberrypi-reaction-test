@@ -1,10 +1,10 @@
-package org.kaloz.gpio
+package org.kaloz.gpio.reaction
 
 import akka.actor._
 import com.pi4j.io.gpio.{GpioPinDigitalInput, GpioPinDigitalOutput, PinState}
 import org.joda.time.DateTime
-import org.kaloz.gpio.SingleLedReactionTestActor._
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
+import org.kaloz.gpio.reaction.SingleLedReactionTestActor._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -19,9 +19,7 @@ That is it!
 - [Fritzing](http://fritzing.org/home/) for circuit design
 - [wiringPi](http://wiringpi.com/) for low level GPIO manipulation
 - [pi4j](http://pi4j.com/) java library to interact with the pi
-- [RxScala](https://github.com/ReactiveX/RxScala) to try reactive streams
-- [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor support
-- [Akka Streams](http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala.html86) to have actor and streams support to wire up the test
+- [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor, persistence, FSM, cluster support
 
 ### Project structure
 In order to be able to try different approaches there are multiple modules in the project:
@@ -29,7 +27,6 @@ In order to be able to try different approaches there are multiple modules in th
 - **gpio** - it contains the base implementation. Future combinators, promise, stream
 - **rx** - it ***will*** contain the RxScala implementation
 - **actor** - it ***will*** contain the actor based implementation
-- **stream** - it ***will*** contain the akka stream solution
  
 ### Circuit layout
 Items:

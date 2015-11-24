@@ -2,6 +2,5 @@ import sbt._
 
 object Aliases {
 
-  lazy val aliases = addCommandAlias("gpioTest", ";project gpio; ;clean ;runMain org.kaloz.gpio.GpioApp") ++
-    addCommandAlias("akkaTest", ";project akka; ;clean ;runMain org.kaloz.gpio.GpioAkkaApp")
+  lazy val aliases = addCommandAlias("gpioActorTest", ";project actor; ;clean ;runMain org.kaloz.gpio.GpioActorApp")
 }

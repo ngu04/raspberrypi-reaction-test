@@ -15,7 +15,7 @@ package object gpio {
   case class User(name: String, email: String, comments: Option[String])
 
   case class Result(id: String = UUID.randomUUID().toString, startTime: DateTime = DateTime.now(), iterations: Int, average: Int, std: Double) {
-    val score = iterations * 1000 + (2000 - average) + (2000 - std)
+    val score = (iterations * 1000) + (1000 * (1 / (average / 1000))) + (100 * (1 / (std / 100)))
   }
 
 }

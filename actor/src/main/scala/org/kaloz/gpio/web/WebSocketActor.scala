@@ -6,8 +6,10 @@ import akka.http.scaladsl.model.ws._
 import akka.util.Timeout
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import org.kaloz.gpio.ReactionTestControllerActor._
-import org.kaloz.gpio.ReactionTestSessionControllerActor._
+import org.kaloz.gpio.reaction.{ReactionTestControllerActor, ReactionTestSessionControllerActor}
+import ReactionTestControllerActor._
+import org.kaloz.gpio.reaction.ReactionTestSessionControllerActor
+import ReactionTestSessionControllerActor._
 import org.kaloz.gpio._
 import org.kaloz.gpio.web.WebSocketActor._
 import org.kaloz.gpio.web.WebSocketMessageFactory._

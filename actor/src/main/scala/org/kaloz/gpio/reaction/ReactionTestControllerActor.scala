@@ -1,13 +1,14 @@
-package org.kaloz.gpio
+package org.kaloz.gpio.reaction
 
 import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import org.kaloz.gpio.ReactionTestControllerActor._
-import org.kaloz.gpio.ReactionTestSessionControllerActor.StartReactionTestSessionCommand
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins.{BCM_24, BCM_25}
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.reaction.ReactionTestControllerActor._
+import org.kaloz.gpio.reaction.ReactionTestSessionControllerActor.StartReactionTestSessionCommand
+import org.kaloz.gpio.{ReactionTestState, TestResult, User}
 
 class ReactionTestControllerActor(pinController: PinController, reactionTestSessionController: ActorRef) extends PersistentActor with ActorLogging {
 

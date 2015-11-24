@@ -1,12 +1,13 @@
-package org.kaloz.gpio
+package org.kaloz.gpio.reaction
 
 import akka.actor._
-import org.kaloz.gpio.ReactionTestControllerActor.{ReactionTestAbortedEvent, SaveReactionTestResultCommand}
-import org.kaloz.gpio.ReactionTestSessionControllerActor._
-import org.kaloz.gpio.SingleLedReactionTestActor._
+import org.kaloz.gpio._
 import org.kaloz.gpio.common.BcmPinConversions.GPIOPinConversion
 import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.reaction.ReactionTestControllerActor.{ReactionTestAbortedEvent, SaveReactionTestResultCommand}
+import org.kaloz.gpio.reaction.ReactionTestSessionControllerActor._
+import org.kaloz.gpio.reaction.SingleLedReactionTestActor.{StartSingleLedReactionTestCommand, TerminateSingleLedReactionTestCommand, SingleLedReactionTestResult}
 
 import scala.util.{Random, Try}
 import scalaz.Scalaz._

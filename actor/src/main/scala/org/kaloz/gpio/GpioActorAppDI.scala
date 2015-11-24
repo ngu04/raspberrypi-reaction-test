@@ -2,9 +2,10 @@ package org.kaloz.gpio
 
 import akka.actor.ActorSystem
 import org.kaloz.gpio.common.PinController
+import org.kaloz.gpio.reaction.{ReactionTestControllerActor, ReactionTestSessionControllerActor, SingleLedReactionTestActor}
 import org.kaloz.gpio.web.WebClientFactory
 
-trait GpioAppDI extends GpioAppConfig {
+trait GpioActorAppDI extends GpioActorAppConfig {
 
   implicit val system = ActorSystem("gpio-akka", config)
 

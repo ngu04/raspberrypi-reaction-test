@@ -61,7 +61,7 @@ object Dependencies {
     scalaTest % "test"
   )
 
-  val akka = deps(
+  val actor = deps(
     config,
     jodaTime,
     akkaActor,

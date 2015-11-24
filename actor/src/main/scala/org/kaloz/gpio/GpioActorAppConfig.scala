@@ -2,7 +2,7 @@ package org.kaloz.gpio
 
 import com.typesafe.config.ConfigFactory
 
-trait GpioAppConfig {
+trait GpioActorAppConfig {
 
   val config = ConfigFactory.load()
 
