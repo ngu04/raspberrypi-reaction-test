@@ -15,7 +15,7 @@ class ReactionTestControllerActor(pinController: PinController, reactionTestSess
   override val persistenceId: String = "reactionTestControllerPersistenceId"
 
   val startButton = pinController.digitalInputPin(BCM_25("Start"))
-  val resultButton = pinController.digitalInputPin(BCM_24("Result"))
+  val shutdownButton = pinController.digitalInputPin(BCM_24("Shutdown"))
 
   var reactionTestState = ReactionTestState()
 
@@ -50,10 +50,10 @@ class ReactionTestControllerActor(pinController: PinController, reactionTestSess
     log.info("Waiting test to be started!!")
     startButton.addStateChangeFallEventListener { event =>
       startButton.removeAllListeners()
-      resultButton.removeAllListeners()
+      shutdownButton.removeAllListeners()
       reactionTestSessionController ! StartReactionTestSessionCommand(self)
     }
-    resultButton.addStateChangeFallEventListener { event =>
+    shutdownButton.addStateChangeFallEventListener { event =>
       log.info("Shutdown...")
       pinController.shutdown()
       context.system.terminate()
