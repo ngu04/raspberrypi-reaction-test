@@ -19,6 +19,7 @@ That is it!
 - [Fritzing](http://fritzing.org/home/) for circuit design
 - [wiringPi](http://wiringpi.com/) for low level GPIO manipulation
 - [pi4j](http://pi4j.com/) java library to interact with the pi
+- [pi4j-client](http://github.com/lachata/pi4j-client) to be able to run pi4j code remotely on a desktop
 - [RxScala](https://github.com/ReactiveX/RxScala) to try reactive streams
 - [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor support
 - [Akka Streams](http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala.html86) to have actor and streams support to wire up the test
@@ -28,22 +29,22 @@ In order to be able to try different approaches there are multiple modules in th
 - [common](common) - it contains the reusable parts
 - [gpio](gpio) - it contains the base implementation. Future combinators, promise, stream
 - **rx** - it ***will*** contain the RxScala implementation
-- **actor** - it ***will*** contain the actor based implementation
+- **actor** - it contains a slightly modified version of this game using actors. This is being used at Scala Exchange London 2015 at Sky stand. Currently it is sitting at the scala_exchange_2015 branch
 - **stream** - it ***will*** contain the akka stream solution
  
 ### Circuit layout
 Items:
 - 3 x 330Ohm resistances
-- 1 x red led
-- 1 x RGB led
+- 1 x red led (progress indicator led)
+- 1 x RGB led (for red and green lights)
 - 4 x buttons
 - Breadboard + wires
 
 GPIO usage
 - Start button -> BCM_25 (input, PinPullResistance.PULL_UP)
 - Stop button -> BCM_24 (input, PinPullResistance.PULL_UP)
-- Red led -> BCM_19 (output)
-- Green led -> BCM_13 (output)
+- Red led (RGB bulb) -> BCM_19 (output)
+- Green led (RGB bulb) -> BCM_13 (output)
 - Red button -> BCM_21 (input, PinPullResistance.PULL_UP)
 - Green button -> BCM_23 (input, PinPullResistance.PULL_UP)
 - Progress indicator -> BCM_12 (PWM output)
@@ -55,5 +56,5 @@ GPIO usage
 The plan is to incrementally add new frameworks and see how I could implement the same functionality with different approaches
 - [Plain scala](gpio) :heavy_check_mark:
 - RxScala :x:
-- Actors :x:
+- [Actors](scala_exchange_2015) :heavy_check_mark:
 - Akka Stream :x:
