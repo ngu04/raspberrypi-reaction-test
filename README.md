@@ -56,5 +56,5 @@ GPIO usage
 The plan is to incrementally add new frameworks and see how I could implement the same functionality with different approaches
 - [Plain scala](gpio) :heavy_check_mark:
 - RxScala :x:
-- [Actors](https://github.com/lachatak/raspberrypi-reaction-test/blob/scala_exchange_2015) :heavy_check_mark:
+- [Actors](https://github.com/lachatak/raspberrypi-reaction-test/tree/scala_exchange_2015) :heavy_check_mark:
 - Akka Stream :x:
