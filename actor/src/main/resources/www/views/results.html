@@ -27,11 +27,27 @@
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="result in leaderBoard | orderBy:'-bestScore'">
-                <td>{{ $index + 1 }}</td>
-                <td class="truncated">{{ result.nickName }}</td>
-                <td>{{ result.bestScore }}</td>
-                <td>{{ result.results.length }}</td>
+            <tr ng-repeat="result in leaderBoard | orderBy:'-bestScore'" ng-click="showDetails[$index] = !showDetails[$index]">
+                <td>
+                    <span>{{ $index + 1 }}</span>
+                </td>
+                <td class="truncated">
+                    <span>{{ result.nickName }}</span>
+                </td>
+                <td>
+                    <span>{{ result.bestScore }}</span>
+                    <div ng-if="result.results.length > 1 && showDetails[$index]">
+                        <span><strong>All results:</strong></span>
+                        <ol>
+                            <li ng-repeat="singleResult in result.results | orderBy:'-score'">
+                               <span>{{singleResult.score}}</span>
+                           </li>
+                        </ol>
+                    </div>
+                </td>
+                <td>
+                    <span>{{ result.results.length }}</span>
+                </td>
             </tr>
             </tbody>
         </table>
