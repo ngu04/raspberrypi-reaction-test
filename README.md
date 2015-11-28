@@ -18,7 +18,7 @@ That is it!
 - [pi4j](http://pi4j.com/) java library to interact with the pi
 - [pi4j-client](http://github.com/lachata/pi4j-client) to be able to run pi4j code remotely on a desktop
 - [Akka](http://doc.akka.io/docs/akka/2.4.0/scala.html?_ga=1.247924037.378696074.1444496540) to have actor, persistence, FSM, cluster support
-- [AngularJS](https://angularjs.org/) to increase the UI development speed
+- [AngularJS](https://angularjs.org/) to increase the UI development speed, support push messages
 - [Bootstrap](http://getbootstrap.com/) to speed up ergonomical UI development
 
 ### Circuit layout
@@ -44,4 +44,6 @@ GPIO usage
 ![Alt text](docs/real.jpg?raw=true "Real")
 
 ### Implementation details
+
+![Alt text](docs/architecture.jpg?raw=true "Architecture")
 
