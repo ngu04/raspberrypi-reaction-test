@@ -42,7 +42,7 @@ GPIO usage
 
 <img src="docs/reaction_bb.jpg" width="800px"/>
 
-<img src="docs/real.jpg" width="800px"/>
+<img src="docs/real.jpg" width="600px"/>
 
 ### Implementation details
 
