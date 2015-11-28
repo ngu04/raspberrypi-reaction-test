@@ -16,7 +16,7 @@ object Version {
   val scalaLogging = "3.1.0"
   val logBack = "1.1.3"
   val rxScala = "0.25.0"
-  val pi4jClient = "0.1.0-SNAPSHOT"
+  val pi4jClient = "0.1.0"
   val mongoPersitence = "0.7.6"
   val json4s = "3.3.0"
 }
