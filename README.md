@@ -43,6 +43,8 @@ GPIO usage
 <img src="docs/reaction_bb.jpg" alt="Reaction" style="width: 250;"/>
 <img src="docs/real.jpg" alt="Real" style="width: 250px;"/>
 
+![](docs/reaction_bb.jpg =250x200)
+
 ### Implementation details
 
 ![Alt text](docs/architecture.png?raw=true "Architecture")
