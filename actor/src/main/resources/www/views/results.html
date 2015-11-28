@@ -21,7 +21,7 @@
             <thead>
             <tr>
                 <th>Rank</th>
-                <th>Name</th>
+                <th>Nick Name</th>
                 <th>Score</th>
                 <th>Tries</th>
             </tr>
@@ -29,7 +29,7 @@
             <tbody>
             <tr ng-repeat="result in leaderBoard | orderBy:'-bestScore'">
                 <td>{{ $index + 1 }}</td>
-                <td class="truncated">{{ result.name }}</td>
+                <td class="truncated">{{ result.nickName }}</td>
                 <td>{{ result.bestScore }}</td>
                 <td>{{ result.results.length }}</td>
             </tr>

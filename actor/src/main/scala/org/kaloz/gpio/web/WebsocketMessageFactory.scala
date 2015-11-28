@@ -16,12 +16,14 @@ object WebSocketMessageFactory {
 
   def gameInProgressMessage = asTextMessage(("type" -> "gameInProgress"))
 
+  def currentResultMessage(testResult: TestResult) = asTextMessage(("type" -> "currentResult") ~ ("currentResult" -> asJValue(testResult)))
+
   def leaderBoardStateMessage(leaderBoard: List[TestResult]) = {
     asTextMessage(("type" -> "leaderBoard") ~ ("leaderBoard" -> leaderBoard.map(asJValue)))
   }
 
   private def asJValue(result: TestResult) = {
-    ("name" -> result.user.name) ~ ("score" -> result.result.score)
+    ("nickName" -> result.user.nickName) ~ ("score" -> result.result.score) ~ ("iterations" -> result.result.iterations) ~ ("average" -> result.result.average) ~ ("std" -> result.result.std)
   }
 
   private def asTextMessage(json: JObject) = TextMessage(compact(render(json)))

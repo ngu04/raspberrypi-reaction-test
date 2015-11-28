@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.ws._
 import akka.util.Timeout
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import org.kaloz.gpio.reaction.{ReactionTestControllerActor, ReactionTestSessionControllerActor}
+import org.kaloz.gpio.reaction.ReactionTestControllerActor
 import ReactionTestControllerActor._
 import org.kaloz.gpio.reaction.ReactionTestSessionControllerActor
 import ReactionTestSessionControllerActor._
@@ -22,6 +22,7 @@ class WebSocketActor(reactionTestController: ActorRef, reactionTestSessionContro
 
   context.system.eventStream.subscribe(self, classOf[ReactionTestSessionStateChangedEvent])
   context.system.eventStream.subscribe(self, classOf[ReactionTestResultsUpdatedEvent])
+  context.system.eventStream.subscribe(self, classOf[ReactionTestResultArrivedEvent])
 
   implicit val timeout = Timeout(5 seconds)
 
@@ -43,9 +44,12 @@ class WebSocketActor(reactionTestController: ActorRef, reactionTestSessionContro
       case WaitingSingleLedTestFinish => sink ! gameInProgressMessage
     }
 
+    def publishCurrentResult(result:TestResult): Unit = sink ! currentResultMessage(result)
+
     {
       case ReactionTestSessionStateChangedEvent(state) => updateState(state)
       case ReactionTestResultsUpdatedEvent(results) => updateLeaderBoard(results)
+      case ReactionTestResultArrivedEvent(result) => publishCurrentResult(result)
 
       case ReactionTestSessionStateResponse(state) => updateState(state)
       case ReactionTestResultsResponse(results) => updateLeaderBoard(results)

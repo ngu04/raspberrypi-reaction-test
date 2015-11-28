@@ -35,7 +35,7 @@ object BaseSettings {
 
   //Required by Aspects
   lazy val javaagentSettings = settings ++ Seq(
-    javaOptions in run ++= Seq(javaagent, "-Dpi4j.client.mode=remote"),
+    javaOptions in run ++= Seq(javaagent, "-Dpi4j.client.mode=remote", "-Dakka.cluster.seed-nodes.0=akka.tcp://pi4j-remoting@192.168.1.110:2552"),
     fork in run := true
   )
 

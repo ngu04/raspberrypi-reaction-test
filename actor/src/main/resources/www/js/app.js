@@ -17,10 +17,14 @@ webClient.controller('Controller', function ($scope, $log) {
                     case "openUserRegistration":
                         $scope.waitingStartSignal = false;
                         $scope.gameInProgress = false;
+                        $scope.currentResult = {};
                         break;
                     case "gameInProgress":
                         $scope.waitingStartSignal = false;
                         $scope.gameInProgress = true;
+                        break;
+                    case "currentResult":
+                        $scope.currentResult = data.currentResult;
                         break;
                     case "leaderBoard":
                         $scope.leaderBoard = groupByName(data.leaderBoard);
@@ -33,6 +37,7 @@ webClient.controller('Controller', function ($scope, $log) {
             $scope.$apply(function() {
                 $scope.connected = true;
                 $scope.user = {};
+                $scope.currentResult = {};
             });
         };
         webSocket.onclose = function() {
@@ -47,14 +52,14 @@ webClient.controller('Controller', function ($scope, $log) {
     function groupByName(results) {
         var grouped = {};
         for(var i = 0; i < results.length; i++) {
-            var name = results[i].name;
+            var nickName = results[i].nickName;
             var score = results[i].score;
-            if(grouped[name]) {
-                grouped[name].bestScore = Math.max(grouped[name].bestScore, score);
-                grouped[name].results.push(results[i]);
+            if(grouped[nickName]) {
+                grouped[nickName].bestScore = Math.max(grouped[nickName].bestScore, score);
+                grouped[nickName].results.push(results[i]);
             } else {
-                grouped[name] = {
-                    name: name,
+                grouped[nickName] = {
+                    nickName: nickName,
                     bestScore: score,
                     results: [ results[i] ]
                 };
@@ -68,6 +73,7 @@ webClient.controller('Controller', function ($scope, $log) {
     }
 
     $scope.user = {};
+    $scope.currentResult = {};
     $scope.leaderBoard = [];
     $scope.waitingStartSignal = false;
     $scope.gameInProgress = false;
@@ -81,9 +87,12 @@ webClient.controller('Controller', function ($scope, $log) {
         webSocket = createWebSocket(webSocketUrl);
     };
 
-
     $scope.disableRegistration = function () {
         return $scope.waitingStartSignal || $scope.gameInProgress;
+    };
+
+    $scope.showCurrentResult = function () {
+        return typeof $scope.currentResult.nickName !== "undefined";
     };
 
     $scope.register = function(){

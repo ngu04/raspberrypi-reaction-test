@@ -12,10 +12,10 @@ package object gpio {
 
   case class TestResult(user: User, result: Result)
 
-  case class User(name: String, email: String, comments: Option[String])
+  case class User(nickName: String, email: String, comments: Option[String])
 
   case class Result(id: String = UUID.randomUUID().toString, startTime: DateTime = DateTime.now(), iterations: Int, average: Int, std: Double) {
-    val score = (iterations * 1000) + (1000 * (1 / (average / 1000))) + (100 * (1 / (std / 100)))
+    val score = Math.ceil((iterations * 1000) + (1000 * (1 / (average / 1000.0))) + (100 * (1 / (std / 100.0))))
   }
 
 }
