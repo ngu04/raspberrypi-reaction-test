@@ -41,6 +41,7 @@ GPIO usage
 - Progress indicator -> BCM_12 (PWM output)
 
 <img src="docs/reaction_bb.jpg" width="800px"/>
+
 <img src="docs/real.jpg" width="800px"/>
 
 ### Implementation details
