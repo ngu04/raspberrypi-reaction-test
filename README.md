@@ -45,5 +45,5 @@ GPIO usage
 
 ### Implementation details
 
-![Alt text](docs/architecture.jpg?raw=true "Architecture")
+![Alt text](docs/architecture.png?raw=true "Architecture")
 
