@@ -1,4 +1,4 @@
-## Raspberry Pi reaction test for London Scala exchange 2015 [![Codacy Badge](https://api.codacy.com/project/badge/grade/2bdf2ea380b24871b9f52d878005a87b)](https://www.codacy.com/app/krisztian-lachata/raspberrypi-reaction-test)
+## Raspberry Pi reaction test for Scala eXchange 2015, London [![Codacy Badge](https://api.codacy.com/project/badge/grade/2bdf2ea380b24871b9f52d878005a87b)](https://www.codacy.com/app/krisztian-lachata/raspberrypi-reaction-test)
 
 ### Functionality
 The application itself is a simple reaction measure system. 
