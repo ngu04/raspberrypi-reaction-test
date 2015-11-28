@@ -43,6 +43,13 @@ GPIO usage
 <img src="docs/reaction_bb.jpg" alt="Reaction" style="height:600px;"/>
 <img src="docs/real.jpg" alt="Real" style="height:600px;"/>
 
+![pic](docs/reaction_bb.jpg)
+
+img[alt="pic"] { 
+  max-width:  700px; 
+  display: block;
+}
+
 ### Implementation details
 
 ![Alt text](docs/architecture.png?raw=true "Architecture")
