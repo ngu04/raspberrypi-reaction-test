@@ -40,10 +40,8 @@ GPIO usage
 - Blue button -> BCM_24 (input, PinPullResistance.PULL_UP) (during the game it is a reaction button, after the game it is a shutdown button)
 - Progress indicator -> BCM_12 (PWM output)
 
-<img src="docs/reaction_bb.jpg" alt="Reaction" style="width: 250;"/>
-<img src="docs/real.jpg" alt="Real" style="width: 250px;"/>
-
-![](docs/reaction_bb.jpg =250x200)
+<img src="docs/reaction_bb.jpg" alt="Reaction" style="height:600px;"/>
+<img src="docs/real.jpg" alt="Real" style="height:600px;"/>
 
 ### Implementation details
 
