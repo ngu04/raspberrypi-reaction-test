@@ -14,15 +14,21 @@
 
         <form ng-submit="register()">
             <div class="form-group">
-                <input type="text" class="form-control" placeholder="NickName"
+                <input type="text"
+                       class="form-control"
+                       placeholder="Nick Name"
                        ng-disabled="disableRegistration();"
                        ng-model="user.nickName"
-                       required>
+                       uib-typeahead="player.nickName for player in leaderBoard | filter:{nickName:$viewValue}"
+                       typeahead-editable="false"
+                       typeahead-on-select="onSelectName($item)"
+                       typeahead-template-url="views/typeahead.html">
             </div>
             <div class="form-group">
                 <input type="email" class="form-control" placeholder="Email address"
                        ng-disabled="disableRegistration();"
-                       ng-model="user.email" required>
+                       ng-model="user.email"
+                       required>
             </div>
             <div class="form-group">
                 <textarea class="form-control" rows="3" ng-model="user.comments" ng-disabled="disableRegistration();"

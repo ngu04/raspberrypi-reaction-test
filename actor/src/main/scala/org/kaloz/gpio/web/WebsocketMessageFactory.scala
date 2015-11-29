@@ -23,7 +23,7 @@ object WebSocketMessageFactory {
   }
 
   private def asJValue(result: TestResult) = {
-    ("nickName" -> result.user.nickName) ~ ("score" -> result.result.score) ~ ("iterations" -> result.result.iterations) ~ ("average" -> result.result.average) ~ ("std" -> result.result.std)
+    ("nickName" -> result.user.nickName) ~ ("email" -> result.user.email) ~ ("score" -> result.result.score) ~ ("iterations" -> result.result.iterations) ~ ("average" -> result.result.average) ~ ("std" -> result.result.std)
   }
 
   private def asTextMessage(json: JObject) = TextMessage(compact(render(json)))

@@ -1,4 +1,4 @@
-var webClient = angular.module('webClient', ['ngRoute']);
+var webClient = angular.module('webClient', ['ngRoute', 'ui.bootstrap']);
 
 webClient.controller('Controller', function ($scope, $log) {
 
@@ -54,12 +54,14 @@ webClient.controller('Controller', function ($scope, $log) {
         for(var i = 0; i < results.length; i++) {
             var nickName = results[i].nickName;
             var score = results[i].score;
+            var email = results[i].email;
             if(grouped[nickName]) {
                 grouped[nickName].bestScore = Math.max(grouped[nickName].bestScore, score);
                 grouped[nickName].results.push(results[i]);
             } else {
                 grouped[nickName] = {
                     nickName: nickName,
+                    email: email,
                     bestScore: score,
                     results: [ results[i] ]
                 };
@@ -81,6 +83,10 @@ webClient.controller('Controller', function ($scope, $log) {
     $scope.webSocketUrl = 'ws://localhost:8080/ws';
 
     var webSocket = createWebSocket($scope.webSocketUrl);
+
+    $scope.onSelectName = function($item){
+        $scope.user.email = $item.email;
+    };
 
     $scope.setWebSocketUrl = function(webSocketUrl) {
         webSocket.close();
