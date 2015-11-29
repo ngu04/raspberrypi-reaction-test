@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular-route.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.14.3/ui-bootstrap-tpls.min.js"></script>
 
     <link rel="stylesheet" href="css/main.css">
     <script src="js/app.js"></script>
@@ -16,10 +17,19 @@
 
 <body ng-controller="Controller">
 
-<div class="container-fluid" ng-hide="connected">
+<div class="container" ng-hide="connected">
     <div class="overlay"></div>
     <div class="col-xs-12 alert alert-warning overlay-message">
-        <h4>Backend is stopped...</h4>
+        <h4>Backend is not accessible...</h4>
+            <div class="input-group">
+            <span class="input-group-addon">
+                <span class="glyphicon glyphicon-cog"></span>
+            </span>
+            <input type="text" class="form-control" ng-model="webSocketUrl">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="setWebSocketUrl(webSocketUrl)">Set</button>
+            </span>
+        </div>
     </div>
 </div>
 
