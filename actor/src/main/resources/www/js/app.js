@@ -1,6 +1,6 @@
 var webClient = angular.module('webClient', ['ngRoute', 'ui.bootstrap']);
 
-webClient.controller('Controller', function ($scope, $log) {
+webClient.controller('Controller', function ($scope, $location, $log) {
 
     function createWebSocket(webSocketUrl) {
         var webSocket = new ReconnectingWebSocket(webSocketUrl);
@@ -80,7 +80,7 @@ webClient.controller('Controller', function ($scope, $log) {
     $scope.waitingStartSignal = false;
     $scope.gameInProgress = false;
 
-    $scope.webSocketUrl = 'ws://localhost:8080/ws';
+    $scope.webSocketUrl = 'ws://' + $location.host() + ':' + $location.port() + '/ws';
 
     var webSocket = createWebSocket($scope.webSocketUrl);
 
