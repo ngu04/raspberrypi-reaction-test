@@ -42,7 +42,7 @@ GPIO usage
 
 <img src="docs/reaction_bb.jpg" width="800px"/>
 
-<img src="docs/real.jpg" width="800px"/>
+<img src="docs/real.jpg" width="600px"/>
 
 ### Implementation details
 - The test application runs on a laptop usg Akka FSM, persistence, and cluster which controls the Raspberry Pi GPIOs using pi4j-client library
