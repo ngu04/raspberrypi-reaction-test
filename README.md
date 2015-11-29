@@ -45,6 +45,8 @@ GPIO usage
 <img src="docs/real.jpg" width="800px"/>
 
 ### Implementation details
-
+- The test application runs on a laptop usg Akka FSM, persistence, and cluster which controls the Raspberry Pi GPIOs using pi4j-client library
+- Low level pi4j native calls are captured by AspectJ and delegated to Raspberry Pi using Akka Cluster
+- 
 ![Alt text](docs/architecture.png?raw=true "Architecture")
 
