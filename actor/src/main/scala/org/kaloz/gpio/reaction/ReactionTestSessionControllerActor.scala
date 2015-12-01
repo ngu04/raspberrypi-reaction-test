@@ -12,7 +12,7 @@ import org.kaloz.gpio.reaction.SingleLedReactionTestActor.{StartSingleLedReactio
 import scala.util.{Random, Try}
 import scalaz.Scalaz._
 
-class ReactionTestSessionControllerActor(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionCorrectionFactor: Int, reactionThreshold: Int) extends FSM[ReactionTestSessionState, ReactionTestSessionStateData] with ActorLogging {
+class ReactionTestSessionControllerActor(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int) extends FSM[ReactionTestSessionState, ReactionTestSessionStateData] with ActorLogging {
 
   private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed"), BCM_20("BlueLed")).map(pinController.digitalOutputPin(_))
   private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton"), BCM_24("BlueLedButton")).map(pinController.digitalInputPin(_))
@@ -39,14 +39,14 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
   when(WaitingSingleLedTestFinish) {
     case Event(SingleLedReactionTestResult(reactionTime), state@ReactionTestSessionStateData(Some(user), _, Some(parent))) =>
       val newState = state.addReactionTime(reactionTime)
-      val reactionPoints = newState.reactionTimes.map(_ / reactionCorrectionFactor).sum
+      val reactionPoints = newState.reactionTimes.sum
       log.info(s"Current state: reactionTime -> $reactionTime ms, reactionPoints -> $reactionPoints, reactionThreshold -> $reactionThreshold")
       progressIndicatorLed.setPwm(reactionPoints)
       if (reactionPoints <= reactionThreshold) {
         startSingleLedTest()
         stay() using newState
       } else {
-        parent ! SaveReactionTestResultCommand(TestResult(user, Result(iterations = newState.numberOfTests, average = newState.averageReactionTime, std = newState.standardDeviation)))
+        parent ! SaveReactionTestResultCommand(TestResult(user, Result(newState.numberOfTests, newState.averageReactionTime, newState.standardDeviation, reactionThreshold / reactionLedPulseLength)))
         abortButton.removeAllListeners()
         goto(WaitingReactionTestSessionStart) using ReactionTestSessionStateData()
       }
@@ -87,7 +87,7 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
 }
 
 object ReactionTestSessionControllerActor {
-  def props(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionCorrectionFactor: Int, reactionThreshold: Int) = Props(classOf[ReactionTestSessionControllerActor], pinController, singleLedReactionTestActor, reactionCorrectionFactor, reactionThreshold)
+  def props(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int) = Props(classOf[ReactionTestSessionControllerActor], pinController, singleLedReactionTestActor, reactionThreshold, reactionLedPulseLength)
 
   sealed trait ReactionTestSessionState
 

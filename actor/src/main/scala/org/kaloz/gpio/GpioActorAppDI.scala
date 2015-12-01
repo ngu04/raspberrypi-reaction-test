@@ -12,7 +12,7 @@ trait GpioActorAppDI extends GpioActorAppConfig {
   val pinController = new PinController()
 
   val singleLedReactionTest = system.actorOf(SingleLedReactionTestActor.props(reactionLedPulseLength), "singleLedReactionTest")
-  val reactionTestSessionController = system.actorOf(ReactionTestSessionControllerActor.props(pinController, singleLedReactionTest, reactionCorrectionFactor, reactionThreshold), "reactionSessionController")
+  val reactionTestSessionController = system.actorOf(ReactionTestSessionControllerActor.props(pinController, singleLedReactionTest, reactionThreshold, reactionLedPulseLength), "reactionSessionController")
   val reactionTestController = system.actorOf(ReactionTestControllerActor.props(pinController, reactionTestSessionController), "reactionTestController")
 
   val binding = WebClientFactory.bind(reactionTestController, reactionTestSessionController)
