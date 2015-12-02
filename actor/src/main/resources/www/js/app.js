@@ -109,6 +109,7 @@ webClient.controller('Controller', function ($scope, $location, $log) {
         else if ($scope.currentResult.score < 1300)return "Boooom! This is how it goes!"
         else if ($scope.currentResult.score < 1600)return "Unbeatable!"
         else if ($scope.currentResult.score < 2000)return "God mode!"
+        else return "How did you do this??!!"
     };
 
     $scope.register = function(){
