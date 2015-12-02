@@ -4,6 +4,8 @@ import sbt._
 
 object BaseSettings {
 
+  val RASPBERRY_PI_IP = "192.168.1.239"
+
   lazy val javaagent = "-javaagent:" + System.getProperty("user.home") + "/.ivy2/cache/org.aspectj/aspectjweaver/jars/aspectjweaver-1.8.7.jar"
 
   lazy val settings =
@@ -35,7 +37,7 @@ object BaseSettings {
 
   //Required by Aspects
   lazy val javaagentSettings = settings ++ Seq(
-    javaOptions in run ++= Seq(javaagent, "-Dpi4j.client.mode=remote", "-Dakka.cluster.seed-nodes.0=akka.tcp://pi4j-remoting@192.168.1.239:2552"),
+    javaOptions in run ++= Seq(javaagent, "-Dpi4j.client.mode=remote", s"-Dakka.cluster.seed-nodes.0=akka.tcp://pi4j-remoting@$RASPBERRY_PI_IP:2552"),
     fork in run := true
   )
 

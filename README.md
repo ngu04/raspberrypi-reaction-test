@@ -21,6 +21,14 @@ That is it!
 - [AngularJS](https://angularjs.org/) to increase the UI development speed, support push messages
 - [Bootstrap](http://getbootstrap.com/) to speed up ergonomical UI development
 
+### How to run
+- Copy [application_template.conf](actor/src/main/resources/application_template.conf) to *application.conf* and modify *MONGO_USER* and *MONGO_PASSWORD* properties + change the host to point your mongo installation. I run my mongo in the cloud so I don't want to share my credentials
+- Clone [pi4j-client](https://github.com/lachatak/pi4j-client) and [runPlaybook.sh](https://github.com/lachatak/pi4j-client/blob/master/remote-server/runPlaybook.sh) after you modified the inventory file to point your raspberry. It will deploy the server to the */home/pi/Development/pi4j-remote-server*
+- Start the deployed server
+- Modify RASPBERRY_PI_IP property in [BaseSettings.scala](project/BaseSettings.scala) to point to your PI
+- Start client using 'sbt gpioActorTest' command
+- The application should be available at [http://localhost:8080](http://localhost:8080)
+ 
 ### Circuit layout
 Items:
 - 4 x 330Ohm resistances
@@ -47,7 +55,6 @@ GPIO usage
 ### Implementation details
 - The test application runs on a laptop usg Akka FSM, persistence, and cluster which controls the Raspberry Pi GPIOs using pi4j-client library
 - Low level pi4j native calls are captured by AspectJ and delegated to Raspberry Pi using Akka Cluster
-- ...
 
 ![Alt text](docs/architecture.png?raw=true "Architecture")
 
