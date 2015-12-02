@@ -5,6 +5,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.kaloz.gpio.TestResult
+import org.kaloz.gpio.reaction.SingleLedReactionTestActor.{Missed, Failure}
 
 object WebSocketMessageFactory {
 
@@ -23,7 +24,7 @@ object WebSocketMessageFactory {
   }
 
   private def asJValue(result: TestResult) = {
-    ("nickName" -> result.user.nickName) ~ ("email" -> result.user.email) ~ ("score" -> result.result.score) ~ ("iterations" -> result.result.iterations) ~ ("average" -> result.result.average) ~ ("std" -> result.result.std)
+    ("nickName" -> result.user.nickName) ~ ("email" -> result.user.email) ~ ("score" -> result.result.score) ~ ("iterations" -> result.result.iterations) ~ ("average" -> result.result.average) ~ ("std" -> result.result.std) ~ ("failures" -> result.result.numberOf(Failure)) ~ ("missed" -> result.result.numberOf(Missed))
   }
 
   private def asTextMessage(json: JObject) = TextMessage(compact(render(json)))

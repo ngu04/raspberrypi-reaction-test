@@ -5,16 +5,22 @@ import scala.math.BigDecimal.RoundingMode
 object ScoreTest extends App {
 
 
-  val pulseLength = 1400
-  val threshold = 30000
+  //13 iterations - 1089 ms avg response time - 292.79147213306294 std
+  val pulseLength = 3000
+  val threshold = 5000
 
-  val minus = threshold / pulseLength
+  val minus = Math.ceil(threshold / pulseLength.toDouble)
 
-  val iterations: Int = 27
-  val average: Double = 1111
-  val std: Double = 600
+  val iterations: Int =  3
+  val average: Double =  (1 / (683 / 1000.0))
+  val std: Double = (1 / (20.534523775 / 10.0))
 
-  val pure = if(iterations == minus) 0 else iterations + (1 / (average / 1000.0)) + (1 / (std / 100.0)) - minus
+  println(iterations)
+  println(average)
+  println(std)
+  println(iterations + average + std)
+  println(minus)
+  val pure:BigDecimal = if(iterations == minus) 0 else BigDecimal(iterations + average + std) - minus
 
-  println(BigDecimal(pure * 100).setScale(0, RoundingMode.HALF_UP))
+  println((pure * 100).setScale(0, RoundingMode.HALF_UP))
 }

@@ -39,8 +39,10 @@
                     <div ng-if="result.results.length > 1 && showDetails[$index]">
                         <span><strong>All results:</strong></span>
                         <ol>
-                            <li ng-repeat="singleResult in result.results | orderBy:'-score'">
-                               <span>{{singleResult.score}}</span>
+                            <br ng-repeat="singleResult in result.results | orderBy:'-score'">
+                               <span>{{singleResult.score}} points</span></br>
+                               <span>{{singleResult.failures}} failures</span></br>
+                               <span>{{singleResult.missed}} missed</span>
                            </li>
                         </ol>
                     </div>

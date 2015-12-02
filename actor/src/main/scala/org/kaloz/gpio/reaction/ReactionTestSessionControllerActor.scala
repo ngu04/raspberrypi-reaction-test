@@ -7,18 +7,14 @@ import org.kaloz.gpio.common.BcmPins._
 import org.kaloz.gpio.common.PinController
 import org.kaloz.gpio.reaction.ReactionTestControllerActor.{ReactionTestAbortedEvent, SaveReactionTestResultCommand}
 import org.kaloz.gpio.reaction.ReactionTestSessionControllerActor._
-import org.kaloz.gpio.reaction.SingleLedReactionTestActor.{StartSingleLedReactionTestCommand, TerminateSingleLedReactionTestCommand, SingleLedReactionTestResult}
+import org.kaloz.gpio.reaction.SingleLedReactionTestActor._
 
-import scala.util.{Random, Try}
+import scala.util.Try
 import scalaz.Scalaz._
 
-class ReactionTestSessionControllerActor(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int) extends FSM[ReactionTestSessionState, ReactionTestSessionStateData] with ActorLogging {
+class ReactionTestSessionControllerActor(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int, wrongReactionPenalty: Int) extends FSM[ReactionTestSessionState, ReactionTestSessionStateData] with ActorLogging {
 
-  private val reactionLeds = List(BCM_19("RedLed"), BCM_13("GreenLed"), BCM_20("BlueLed")).map(pinController.digitalOutputPin(_))
-  private val reactionButtons = List(BCM_21("RedLedButton"), BCM_23("GreenLedButton"), BCM_24("BlueLedButton")).map(pinController.digitalInputPin(_))
   private val progressIndicatorLed = pinController.digitalPwmOutputPin(BCM_12("ProgressIndicatorLed"))
-  reactionButtons.foreach(_.setDebounce(2000))
-
   private val abortButton = pinController.digitalInputPin(BCM_25("AbortTest"))
 
   startWith(WaitingReactionTestSessionStart, ReactionTestSessionStateData())
@@ -37,17 +33,19 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
   }
 
   when(WaitingSingleLedTestFinish) {
-    case Event(SingleLedReactionTestResult(reactionTime), state@ReactionTestSessionStateData(Some(user), _, Some(parent))) =>
-      val newState = state.addReactionTime(reactionTime)
-      val reactionPoints = newState.reactionTimes.sum
-      log.info(s"Current state: reactionTime -> $reactionTime ms, reactionPoints -> $reactionPoints, reactionThreshold -> $reactionThreshold")
-      progressIndicatorLed.setPwm(reactionPoints)
+    case Event(SingleLedReactionTestResult(reactionTime, reaction), state@ReactionTestSessionStateData(Some(user), _, Some(parent), _)) =>
+      val newState = state.addReactionTime(reactionTime, reaction)
+      val reactionPoints = newState.reactionTimes.sum + newState.numberOfFailures * wrongReactionPenalty
+      if (reaction == Failure) log.info(s"Penalty is applied! Wrong button was pushed!!")
+      log.info(s"Current state: reaction -> $reaction - reactionTime -> $reactionTime ms, reactionPoints -> $reactionPoints, reactionThreshold -> $reactionThreshold, failures -> ${newState.numberOfFailures}")
+      progressIndicatorLed.setPwm(reactionPoints / 100)
       if (reactionPoints <= reactionThreshold) {
         startSingleLedTest()
         stay() using newState
       } else {
-        parent ! SaveReactionTestResultCommand(TestResult(user, Result(newState.numberOfTests, newState.averageReactionTime, newState.standardDeviation, reactionThreshold / reactionLedPulseLength)))
         abortButton.removeAllListeners()
+        progressIndicatorLed.setPwm(0)
+        parent ! SaveReactionTestResultCommand(TestResult(user, Result(newState.numberOfTests, newState.averageReactionTime, newState.standardDeviation, reactionThreshold / reactionLedPulseLength.toDouble, newState.reactions)))
         goto(WaitingReactionTestSessionStart) using ReactionTestSessionStateData()
       }
   }
@@ -59,7 +57,7 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
   }
 
   whenUnhandled {
-    case Event(AbortReactionTestSessionCommand, ReactionTestSessionStateData(userOption, _, Some(parent))) =>
+    case Event(AbortReactionTestSessionCommand, ReactionTestSessionStateData(userOption, _, Some(parent), _)) =>
       parent ! ReactionTestAbortedEvent(userOption)
       singleLedReactionTestActor ! TerminateSingleLedReactionTestCommand
       goto(WaitingReactionTestSessionStart) using ReactionTestSessionStateData()
@@ -71,10 +69,7 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
 
   initialize()
 
-  def startSingleLedTest(): Unit = {
-    val reactionTestType = Random.nextInt(reactionLeds.size)
-    singleLedReactionTestActor ! StartSingleLedReactionTestCommand(reactionLeds(reactionTestType), reactionButtons(reactionTestType), self)
-  }
+  def startSingleLedTest(): Unit = singleLedReactionTestActor ! StartSingleLedReactionTestCommand(self)
 
   def initSession() = {
     progressIndicatorLed.setPwm(0)
@@ -87,7 +82,7 @@ class ReactionTestSessionControllerActor(pinController: PinController, singleLed
 }
 
 object ReactionTestSessionControllerActor {
-  def props(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int) = Props(classOf[ReactionTestSessionControllerActor], pinController, singleLedReactionTestActor, reactionThreshold, reactionLedPulseLength)
+  def props(pinController: PinController, singleLedReactionTestActor: ActorRef, reactionThreshold: Int, reactionLedPulseLength: Int, wrongReactionPenalty: Int) = Props(classOf[ReactionTestSessionControllerActor], pinController, singleLedReactionTestActor, reactionThreshold, reactionLedPulseLength, wrongReactionPenalty)
 
   sealed trait ReactionTestSessionState
 
@@ -111,17 +106,19 @@ object ReactionTestSessionControllerActor {
 
   case class ReactionTestSessionStateChangedEvent(state: ReactionTestSessionState)
 
-  case class ReactionTestSessionStateData(user: Option[User] = None, reactionTimes: List[Int] = List.empty, parent: Option[ActorRef] = None) {
+  case class ReactionTestSessionStateData(user: Option[User] = None, reactionTimes: List[Int] = List.empty, parent: Option[ActorRef] = None, reactions: List[Reaction] = List.empty) {
 
     def withUser(user: User) = copy(user = user.some)
 
     def withParent(parent: ActorRef) = copy(parent = parent.some)
 
-    def addReactionTime(reactionTime: Int) = copy(reactionTimes = reactionTime :: reactionTimes)
+    def addReactionTime(reactionTime: Int, reaction: Reaction) = copy(reactionTimes = reactionTime :: reactionTimes, reactions = reaction :: reactions)
 
     val averageReactionTime = Try(reactionTimes.sum / reactionTimes.size).getOrElse(0)
 
     val numberOfTests = reactionTimes.size
+
+    val numberOfFailures = reactions.filter(_ == Failure).size
 
     val standardDeviation = math.sqrt(reactionTimes.foldLeft(0.0d)((total, item) => total + math.pow(item - averageReactionTime, 2)) / reactionTimes.size.toDouble)
   }

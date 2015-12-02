@@ -32,7 +32,7 @@ class ReactionTestControllerActor(pinController: PinController, reactionTestSess
     saveSnapshot(reactionTestState)
 
     log.info(s"Result for ${evt.testResult.user.nickName} has been persisted!")
-    log.info(s"${evt.testResult.result.iterations} iterations - ${evt.testResult.result.average} ms avg response time - ${evt.testResult.result.std} std")
+    log.info(s"Final score is ${evt.testResult.result.score} --> ${evt.testResult.result.iterations} iterations - ${evt.testResult.result.average} ms avg response time - ${evt.testResult.result.std} std")
 
     context.system.eventStream.publish(evt)
     context.system.eventStream.publish(ReactionTestResultsUpdatedEvent(reactionTestState.testResults))
