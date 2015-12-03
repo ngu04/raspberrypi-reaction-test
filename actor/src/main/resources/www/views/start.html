@@ -37,5 +37,20 @@
                 You may contact me, let's play!</button>
         </form>
         </p>
+
+        <br>
+
+        <div>
+            <div ng-controller="CountController">
+                <div align="center"><font size=100 color='red'>{{count}}</font></div>
+                <br>
+                <div align="center">
+                <button type="button" data-ng-click="startCount()">Start</button>
+                <button type="button" data-ng-click="stopCount()">Stop</button>
+                <button type="button" data-ng-click="resetCount()">Reset</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>

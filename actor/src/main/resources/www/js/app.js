@@ -1,5 +1,42 @@
 var webClient = angular.module('webClient', ['ngRoute', 'ui.bootstrap']);
 
+
+webClient.controller('CountController', ['$scope', '$interval',
+    function($scope, $interval) {
+        $scope.count = 0;
+
+        var stop;
+        $scope.startCount = function() {
+            // Don't start a new fight if we are already fighting
+            if ( angular.isDefined(stop) ) return;
+
+            stop = $interval(function() {
+
+                if ($scope.count >= 0) {
+                    $scope.count = $scope.count + 1;
+                } else {
+                    $scope.stopFight();
+                }
+            }, 1000);
+        };
+
+        $scope.stopCount = function() {
+            if (angular.isDefined(stop)) {
+                $interval.cancel(stop);
+                stop = undefined;
+            }
+        };
+
+        $scope.resetCount = function() {
+            $scope.count = 0;
+        };
+
+        $scope.$on('$destroy', function() {
+            // Make sure that the interval is destroyed too
+            $scope.stopFight();
+        });
+    }]);
+
 webClient.controller('Controller', function ($scope, $location, $log) {
 
     function createWebSocket(webSocketUrl) {
@@ -35,16 +72,18 @@ webClient.controller('Controller', function ($scope, $location, $log) {
 
         webSocket.onopen = function() {
             $scope.$apply(function() {
-                $scope.connected = true;
+                //$scope.connected = true;
                 $scope.user = {};
                 $scope.currentResult = {};
             });
         };
         webSocket.onclose = function() {
             $scope.$apply(function() {
-                $scope.connected = false;
+               // $scope.connected = false;
             });
         };
+
+        $scope.connected = true;
 
         return webSocket;
     }
@@ -78,7 +117,7 @@ webClient.controller('Controller', function ($scope, $location, $log) {
     $scope.currentResult = {};
     $scope.leaderBoard = [];
     $scope.waitingStartSignal = false;
-    $scope.gameInProgress = false;
+    $scope.gameInProgress = true;
 
     $scope.webSocketUrl = 'ws://' + $location.host() + ':' + $location.port() + '/ws';
 
@@ -122,6 +161,8 @@ webClient.controller('Controller', function ($scope, $location, $log) {
         $scope.user = {};
         webSocket.send(message);
     };
+
+    $scope.format = 'ss';
 });
 
 webClient.config(function ($routeProvider) {
